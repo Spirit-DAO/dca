@@ -35,6 +35,10 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event OrderExecuted(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderFailed(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 
+	// Event for GELATO
+	event CounterTaskCreated(uint256 id);
+	event FeesCheck(uint256 fees, address token);
+
 	constructor(address _proxy, address _automate, address _tresory, address _usdc) Ownable(msg.sender) AutomateTaskCreator(_automate) {
 		proxy = IProxyParaswap(payable(_proxy));
 		tresory = IERC20(_tresory);
@@ -77,10 +81,10 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		}
 
 		uint256 balanceBefore = tokenOut.balanceOf(user);
-		ordersById[id].lastExecution = block.timestamp;
 		ordersById[id].totalExecutions += 1;
 		ordersById[id].totalAmountIn += ordersById[id].amountIn;
         SpiritDcaApprover(ordersById[id].approver).executeOrder();
+		ordersById[id].lastExecution = block.timestamp;
 		
 		tokenIn.transfer(address(tresory), fees);
 		tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
@@ -108,6 +112,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		(uint256 fee, address feeToken) = _getFeeDetails();
 
         _transfer(fee, feeToken);
+		emit FeesCheck(fee, feeToken);
 
 		_executeOrder(id, argProxy);
 	}
@@ -142,8 +147,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         return address(uint160(uint(hash)));
     }
 
-	// not finished yet
-	function createTask(uint256 id) public payable {
+	function createTask(uint256 id) public {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
 		bytes memory execData;
@@ -156,7 +160,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 			ordersById[id].tokenOut, 						//destToken
 			ERC20(ordersById[id].tokenIn).decimals(), 		//srcDecimals
 			ERC20(ordersById[id].tokenOut).decimals(), 		//destDecimals
-			ordersById[id].amountIn, 						//amount			
+			(ordersById[id].amountIn / 100) * 99, 			//amount			
 			"250", 											//network
 			"spiritswap", 									//partner
 			"false",										//otherExchangePrices
@@ -177,12 +181,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		);
 
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"IPFS CID",
+			"QmVxYA3Z6NGhps7Snd8qPjomjCuMtdABqvA9Ahop2Edee3",
 			execData
 		);
 	
-		ordersById[id].taskId = _createTask(address(this), execData, moduleData, address(0));
-		//emit CounterTaskCreated(id);
+		ordersById[id].taskId = _createTask(address(this), bytes(""), moduleData, address(0));
+		emit CounterTaskCreated(id);
 	}
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, argParaswap memory argProxy) public {
@@ -199,7 +203,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		ordersCount++;
 
 		_executeOrder(getOrdersCountTotal() - 1, argProxy);
-		//createTask(getOrdersCountTotal() - 1);
+		createTask(getOrdersCountTotal() - 1);
 
 		emit OrderCreated(msg.sender, getOrdersCountTotal() - 1, tokenIn, tokenOut, amountIn, amountOutMin, period);
 	}
@@ -215,12 +219,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		if (ordersById[id].period != period)
 		{
 			ordersById[id].period = period;
-			//_cancelTask(ordersById[id].taskId);
+			_cancelTask(ordersById[id].taskId);
 			if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
 			{
 				_executeOrder(id, argProxy);
 			}
-			//createTask(id);
+			createTask(id);
 		}
 
 		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
@@ -232,7 +236,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		require(ordersById[id].stopped == false, 'Order is already stopped.');
 
 		ordersById[id].stopped = true;
-		//_cancelTask(ordersById[id].taskId);//Before or after struct value change?
+		_cancelTask(ordersById[id].taskId);//Before or after struct value change?
 
 		emit OrderStopped(msg.sender, id);
 	}
@@ -246,7 +250,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) {
 			_executeOrder(id, argProxy);
 		}
-		//createTask(id);
+		createTask(id);
 
 		emit OrderRestarted(msg.sender, id);
 	}
