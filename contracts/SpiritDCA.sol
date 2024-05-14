@@ -7,6 +7,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import 'contracts/DcaApprover.sol';
 import 'contracts/Integrations/Gelato/AutomateTaskCreator.sol';
 
+import "@openzeppelin/contracts/utils/Strings.sol";
+import {IOpsProxy} from "contracts/Interfaces/IOpsProxy.sol";
+
 interface IProxyParaswap {
 	function simpleSwap(Utils.SimpleData memory data) external payable returns (uint256);
 	function multiSwap(Utils.SellData memory data) external payable returns (uint256);
@@ -36,7 +39,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event OrderFailed(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 
 	// Event for GELATO
-	event CounterTaskCreated(uint256 id);
+	event CounterTaskCreated(bytes32 id);
 	event FeesCheck(uint256 fees, address token);
 
 	constructor(address _proxy, address _automate, address _tresory, address _usdc) Ownable(msg.sender) AutomateTaskCreator(_automate) {
@@ -103,7 +106,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
 	}
 	
-	function executeOrder(uint256 id, argParaswap memory argProxy) public {
+	function executeOrder(uint256 id, argParaswap memory argProxy) public onlyDedicatedMsgSender {
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
@@ -111,8 +114,8 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 
 		(uint256 fee, address feeToken) = _getFeeDetails();
 
-        _transfer(fee, feeToken);
 		emit FeesCheck(fee, feeToken);
+        _transfer(fee, feeToken);
 
 		_executeOrder(id, argProxy);
 	}
@@ -147,46 +150,88 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         return address(uint160(uint(hash)));
     }
 
+	/*function _getWeb3FunctionArgsHex(
+        address dca,
+        uint256 id,
+		address user,
+		address tokenIn,
+		address tokenOut,
+		uint256 amountIn
+    ) 
+    internal 
+    pure 
+    returns (bytes memory web3FunctionArgsHex) {
+        web3FunctionArgsHex = abi.encode(
+			dca,
+			id,
+			user,
+			tokenIn,
+			tokenOut,
+			Strings.toString(ERC20(tokenIn).decimals()),
+			Strings.toString(ERC20(tokenOut).decimals()),
+			Strings.toString((amountIn / 100) * 99),
+			"250",
+			"spiritswap",
+			"false",
+			"15"
+		);
+	}*/
+
+	//function createTask(uint256 id, argParaswap memory argProxy) public {
 	function createTask(uint256 id) public {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
-		bytes memory execData;
-		
-		execData = abi.encode(
-			address(this), 									//dca address	
-			id, 											//id
-			ordersById[id].user, 							//userAddress
-			ordersById[id].tokenIn,							//srcToken
-			ordersById[id].tokenOut, 						//destToken
-			ERC20(ordersById[id].tokenIn).decimals(), 		//srcDecimals
-			ERC20(ordersById[id].tokenOut).decimals(), 		//destDecimals
-			(ordersById[id].amountIn / 100) * 99, 			//amount			
-			"250", 											//network
-			"spiritswap", 									//partner
-			"false",										//otherExchangePrices
-			"15"											//maxImpact
+		bytes memory execData = abi.encodeWithSelector(
+			IOpsProxy.executeCall.selector
 		);
+
+		bytes memory execDataTypeScript = abi.encode(
+			Strings.toHexString(address(this)), 								//dca address	
+			id, 																//id
+			Strings.toHexString(ordersById[id].user), 							//userAddress
+			Strings.toHexString(ordersById[id].tokenIn),						//srcToken
+			Strings.toHexString(ordersById[id].tokenOut), 						//destToken
+			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()), 		//srcDecimals
+			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()), 		//destDecimals
+			Strings.toString((ordersById[id].amountIn / 100) * 99), 			//amount			
+			"250", 																//network
+			"spiritswap", 														//partner
+			"false",															//otherExchangePrices
+			"15"																//maxImpact
+		);
+		/*bytes memory _web3FunctionArgsHex = _getWeb3FunctionArgsHex(
+			address(this),
+			id,
+			ordersById[id].user,
+			ordersById[id].tokenIn,
+			ordersById[id].tokenOut,
+			ordersById[id].amountIn
+		);*/
 
 		ModuleData memory moduleData = ModuleData({
-			modules: new Module[](2),
-			args: new bytes[](2)
+			modules: new Module[](3),
+			args: new bytes[](3)
 		});
 
-		moduleData.modules[0] = Module.TRIGGER;
+		moduleData.modules[0] = Module.PROXY;
 		moduleData.modules[1] = Module.WEB3_FUNCTION;
+		moduleData.modules[2] = Module.TRIGGER;
 	
-		moduleData.args[0] = _timeTriggerModuleArg(
-			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period)
-		);
+		moduleData.args[0] = _proxyModuleArg();
 
 		moduleData.args[1] = _web3FunctionModuleArg(
 			"QmVxYA3Z6NGhps7Snd8qPjomjCuMtdABqvA9Ahop2Edee3",
-			execData
+			execDataTypeScript
+		);
+
+		moduleData.args[2] = _timeTriggerModuleArg(
+			uint128(ordersById[id].lastExecution), 
+			uint128(ordersById[id].period)
 		);
 	
-		ordersById[id].taskId = _createTask(address(this), bytes(""), moduleData, address(0));
-		emit CounterTaskCreated(id);
+		ordersById[id].taskId = _createTask(dedicatedMsgSender, execData, moduleData, address(0));
+		
+		emit CounterTaskCreated(ordersById[id].taskId);
 	}
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, argParaswap memory argProxy) public {
@@ -204,6 +249,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 
 		_executeOrder(getOrdersCountTotal() - 1, argProxy);
 		createTask(getOrdersCountTotal() - 1);
+		//createTask(getOrdersCountTotal() - 1, argProxy);
 
 		emit OrderCreated(msg.sender, getOrdersCountTotal() - 1, tokenIn, tokenOut, amountIn, amountOutMin, period);
 	}
@@ -225,6 +271,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 				_executeOrder(id, argProxy);
 			}
 			createTask(id);
+			//createTask(id, argProxy);
 		}
 
 		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
@@ -251,6 +298,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 			_executeOrder(id, argProxy);
 		}
 		createTask(id);
+		//createTask(id, argProxy);
 
 		emit OrderRestarted(msg.sender, id);
 	}
