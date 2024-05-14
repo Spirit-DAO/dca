@@ -105,6 +105,10 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance.');
 
+		(uint256 fee, address feeToken) = _getFeeDetails();
+
+        _transfer(fee, feeToken);
+
 		_executeOrder(id, argProxy);
 	}
 
