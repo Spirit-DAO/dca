@@ -106,7 +106,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
 	}
 	
-	function executeOrder(uint256 id, argParaswap memory argProxy) public onlyDedicatedMsgSender {
+	function executeOrder(uint256 id, argParaswap memory argProxy) public {
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
@@ -150,13 +150,15 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         return address(uint160(uint(hash)));
     }
 
-	/*function _getWeb3FunctionArgsHex(
+	function _getWeb3FunctionArgsHex(
         address dca,
         uint256 id,
 		address user,
 		address tokenIn,
 		address tokenOut,
-		uint256 amountIn
+		string memory decimalsIn,
+		string memory decimalsOut,
+		string memory amountIn
     ) 
     internal 
     pure 
@@ -167,25 +169,66 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 			user,
 			tokenIn,
 			tokenOut,
-			Strings.toString(ERC20(tokenIn).decimals()),
-			Strings.toString(ERC20(tokenOut).decimals()),
-			Strings.toString((amountIn / 100) * 99),
+			decimalsIn,
+			decimalsOut,
+			amountIn,
 			"250",
 			"spiritswap",
 			"false",
 			"15"
 		);
-	}*/
+	}
+	
 
 	//function createTask(uint256 id, argParaswap memory argProxy) public {
 	function createTask(uint256 id) public {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
-		bytes memory execData = abi.encodeWithSelector(
-			IOpsProxy.executeCall.selector
+		string memory decimalsInStr = Strings.toString(ERC20(ordersById[id].tokenIn).decimals());
+		string memory decimalsOutStr = Strings.toString(ERC20(ordersById[id].tokenOut).decimals());
+		string memory amountInStr = Strings.toString((ordersById[id].amountIn / 100) * 99);
+
+		bytes memory execData = _getWeb3FunctionArgsHex(
+			address(this),
+			id,
+			ordersById[id].user,
+			ordersById[id].tokenIn,
+			ordersById[id].tokenOut,
+			decimalsInStr,
+			decimalsOutStr,
+			amountInStr
 		);
 
-		bytes memory execDataTypeScript = abi.encode(
+		ModuleData memory moduleData = ModuleData({
+			modules: new Module[](3),
+			args: new bytes[](3)
+		});
+
+		moduleData.modules[0] = Module.PROXY;
+		moduleData.modules[1] = Module.WEB3_FUNCTION;
+		//moduleData.modules[2] = Module.TRIGGER;
+	
+		moduleData.args[0] = _proxyModuleArg();
+		moduleData.args[1] = _web3FunctionModuleArg(
+			"QmVxYA3Z6NGhps7Snd8qPjomjCuMtdABqvA9Ahop2Edee3",
+			execData
+		);
+		/*moduleData.args[2] = _timeTriggerModuleArg(
+			uint128(ordersById[id].lastExecution), 
+			uint128(ordersById[id].period)
+		);*/
+
+		bytes32 taskId = _createTask(address(this), execData, moduleData, address(0));
+	
+		ordersById[id].taskId = taskId;
+		
+		emit CounterTaskCreated(taskId);
+	}
+		/*bytes memory execData = abi.encodeWithSelector(
+			IOpsProxy.executeCall.selector
+		);*/
+
+		/*bytes memory execDataTypeScript = abi.encode(
 			Strings.toHexString(address(this)), 								//dca address	
 			id, 																//id
 			Strings.toHexString(ordersById[id].user), 							//userAddress
@@ -198,7 +241,8 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 			"spiritswap", 														//partner
 			"false",															//otherExchangePrices
 			"15"																//maxImpact
-		);
+		);*/
+
 		/*bytes memory _web3FunctionArgsHex = _getWeb3FunctionArgsHex(
 			address(this),
 			id,
@@ -208,31 +252,10 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 			ordersById[id].amountIn
 		);*/
 
-		ModuleData memory moduleData = ModuleData({
-			modules: new Module[](3),
-			args: new bytes[](3)
-		});
-
-		moduleData.modules[0] = Module.PROXY;
-		moduleData.modules[1] = Module.WEB3_FUNCTION;
-		moduleData.modules[2] = Module.TRIGGER;
-	
-		moduleData.args[0] = _proxyModuleArg();
-
-		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmVxYA3Z6NGhps7Snd8qPjomjCuMtdABqvA9Ahop2Edee3",
-			execDataTypeScript
-		);
-
-		moduleData.args[2] = _timeTriggerModuleArg(
-			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period)
-		);
-	
-		ordersById[id].taskId = _createTask(dedicatedMsgSender, execData, moduleData, address(0));
-		
-		emit CounterTaskCreated(ordersById[id].taskId);
-	}
+	function cancelTask(uint256 id) public {
+        require(ordersById[id].taskId != bytes32(""), "Task not started");
+        _cancelTask(ordersById[id].taskId);
+    }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, argParaswap memory argProxy) public {
 		require(period > 0, 'Period must be greater than 0.');
@@ -265,7 +288,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		if (ordersById[id].period != period)
 		{
 			ordersById[id].period = period;
-			_cancelTask(ordersById[id].taskId);
+			cancelTask(id);
 			if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
 			{
 				_executeOrder(id, argProxy);
@@ -283,7 +306,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		require(ordersById[id].stopped == false, 'Order is already stopped.');
 
 		ordersById[id].stopped = true;
-		_cancelTask(ordersById[id].taskId);//Before or after struct value change?
+		cancelTask(id);//Before or after struct value change?
 
 		emit OrderStopped(msg.sender, id);
 	}
