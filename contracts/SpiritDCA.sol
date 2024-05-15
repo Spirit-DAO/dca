@@ -38,10 +38,9 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event OrderExecuted(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderFailed(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 
-	event Test(address indexed approver);
-
 	// Event for GELATO
 	event CounterTaskCreated(bytes32 id);
+	event CounterTaskCancelled(bytes32 id);
 	event FeesCheck(uint256 fees, address token);
 
 	constructor(address _proxy, address _automate, address _tresory, address _usdc) Ownable(msg.sender) AutomateTaskCreator(_automate) {
@@ -152,19 +151,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         return address(uint160(uint(hash)));
     }
 
-	function _getWeb3FunctionArgsHex(
-        address dca,
-        uint256 id,
-		address user,
-		address tokenIn,
-		address tokenOut,
-		string memory decimalsIn,
-		string memory decimalsOut,
-		string memory amountIn
-    ) 
-    internal 
-    pure 
-    returns (bytes memory web3FunctionArgsHex) {
+	function _getWeb3FunctionArgsHex(address dca, uint256 id, address user, address tokenIn, address tokenOut, string memory decimalsIn, string memory decimalsOut, string memory amountIn) internal pure returns (bytes memory web3FunctionArgsHex) {
         web3FunctionArgsHex = abi.encode(
 			dca,
 			id,
@@ -227,7 +214,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 
 	function cancelTask(uint256 id) public {
         require(ordersById[id].taskId != bytes32(""), "Task not started");
-        _cancelTask(ordersById[id].taskId);
+		bytes32 taskId = ordersById[id].taskId;
+		ordersById[id].taskId = bytes32("");
+
+        _cancelTask(taskId);
+
+		emit CounterTaskCancelled(taskId);
     }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, argParaswap memory argProxy) public {
@@ -266,7 +258,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 				_executeOrder(id, argProxy);
 			}
 			createTask(id);
-			//createTask(id, argProxy);
 		}
 
 		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
@@ -293,7 +284,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 			_executeOrder(id, argProxy);
 		}
 		createTask(id);
-		//createTask(id, argProxy);
 
 		emit OrderRestarted(msg.sender, id);
 	}
