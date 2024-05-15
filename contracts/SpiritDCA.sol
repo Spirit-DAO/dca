@@ -200,8 +200,8 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		);
 
 		ModuleData memory moduleData = ModuleData({
-			modules: new Module[](3),
-			args: new bytes[](3)
+			modules: new Module[](2),//3 -> 2
+			args: new bytes[](2)//3 -> 2
 		});
 
 		moduleData.modules[0] = Module.PROXY;
