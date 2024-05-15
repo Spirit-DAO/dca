@@ -150,40 +150,23 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         // NOTE: cast last 20 bytes of hash to address
         return address(uint160(uint(hash)));
     }
-
-	function _getWeb3FunctionArgsHex(address dca, uint256 id, address user, address tokenIn, address tokenOut, string memory decimalsIn, string memory decimalsOut, string memory amountIn) internal pure returns (bytes memory web3FunctionArgsHex) {
-        web3FunctionArgsHex = abi.encode(
-			dca,
-			id,
-			user,
-			tokenIn,
-			tokenOut,
-			decimalsIn,
-			decimalsOut,
-			amountIn,
-			"250",
-			"spiritswap",
-			"false",
-			"15"
-		);
-	}
 	
 	function createTask(uint256 id) public {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
-		string memory decimalsInStr = Strings.toString(ERC20(ordersById[id].tokenIn).decimals());
-		string memory decimalsOutStr = Strings.toString(ERC20(ordersById[id].tokenOut).decimals());
-		string memory amountInStr = Strings.toString((ordersById[id].amountIn / 100) * 99);
-
-		bytes memory execData = _getWeb3FunctionArgsHex(
-			address(this),
-			id,
-			ordersById[id].user,
-			ordersById[id].tokenIn,
-			ordersById[id].tokenOut,
-			decimalsInStr,
-			decimalsOutStr,
-			amountInStr
+		bytes memory execData = abi.encode(
+			address(this),													//dca
+			id,																//id
+			ordersById[id].user,											//userAddress						
+			ordersById[id].tokenIn,											//srcToken
+			ordersById[id].tokenOut,										//destToken
+			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()),		//srcDecimals
+			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()),	//destDecimals
+			Strings.toString((ordersById[id].amountIn / 100) * 99),			//amount
+			"250",															//network
+			"spiritswap",													//partner
+			"false",														//otherExchangePrices
+			"15"															//maxImpact
 		);
 
 		ModuleData memory moduleData = ModuleData({
