@@ -38,6 +38,8 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event OrderExecuted(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderFailed(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 
+	event Test(address indexed approver);
+
 	// Event for GELATO
 	event CounterTaskCreated(bytes32 id);
 	event FeesCheck(uint256 fees, address token);
@@ -112,12 +114,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance.');
 
-		(uint256 fee, address feeToken) = _getFeeDetails();
-
-		emit FeesCheck(fee, feeToken);
-        _transfer(fee, feeToken);
-
 		_executeOrder(id, argProxy);
+
+		//(uint256 fee, address feeToken) = _getFeeDetails();
+
+        //_transfer(fee, feeToken);
+		//emit FeesCheck(fee, feeToken);
 	}
 
 	function getOrdersCountTotal() public view returns (uint256) {
@@ -179,8 +181,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		);
 	}
 	
-
-	//function createTask(uint256 id, argParaswap memory argProxy) public {
 	function createTask(uint256 id) public {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
@@ -200,23 +200,23 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		);
 
 		ModuleData memory moduleData = ModuleData({
-			modules: new Module[](2),//3 -> 2
-			args: new bytes[](2)//3 -> 2
+			modules: new Module[](3),
+			args: new bytes[](3)
 		});
 
 		moduleData.modules[0] = Module.PROXY;
 		moduleData.modules[1] = Module.WEB3_FUNCTION;
-		//moduleData.modules[2] = Module.TRIGGER;
+		moduleData.modules[2] = Module.TRIGGER;
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
 			"QmVxYA3Z6NGhps7Snd8qPjomjCuMtdABqvA9Ahop2Edee3",
 			execData
 		);
-		/*moduleData.args[2] = _timeTriggerModuleArg(
+		moduleData.args[2] = _timeTriggerModuleArg(
 			uint128(ordersById[id].lastExecution), 
 			uint128(ordersById[id].period)
-		);*/
+		);
 
 		bytes32 taskId = _createTask(address(this), execData, moduleData, address(0));
 	
@@ -224,33 +224,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		
 		emit CounterTaskCreated(taskId);
 	}
-		/*bytes memory execData = abi.encodeWithSelector(
-			IOpsProxy.executeCall.selector
-		);*/
-
-		/*bytes memory execDataTypeScript = abi.encode(
-			Strings.toHexString(address(this)), 								//dca address	
-			id, 																//id
-			Strings.toHexString(ordersById[id].user), 							//userAddress
-			Strings.toHexString(ordersById[id].tokenIn),						//srcToken
-			Strings.toHexString(ordersById[id].tokenOut), 						//destToken
-			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()), 		//srcDecimals
-			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()), 		//destDecimals
-			Strings.toString((ordersById[id].amountIn / 100) * 99), 			//amount			
-			"250", 																//network
-			"spiritswap", 														//partner
-			"false",															//otherExchangePrices
-			"15"																//maxImpact
-		);*/
-
-		/*bytes memory _web3FunctionArgsHex = _getWeb3FunctionArgsHex(
-			address(this),
-			id,
-			ordersById[id].user,
-			ordersById[id].tokenIn,
-			ordersById[id].tokenOut,
-			ordersById[id].amountIn
-		);*/
 
 	function cancelTask(uint256 id) public {
         require(ordersById[id].taskId != bytes32(""), "Task not started");
@@ -272,7 +245,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 
 		_executeOrder(getOrdersCountTotal() - 1, argProxy);
 		createTask(getOrdersCountTotal() - 1);
-		//createTask(getOrdersCountTotal() - 1, argProxy);
 
 		emit OrderCreated(msg.sender, getOrdersCountTotal() - 1, tokenIn, tokenOut, amountIn, amountOutMin, period);
 	}
