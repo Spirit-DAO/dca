@@ -16,36 +16,7 @@ interface IProxyParaswap {
 	function megaSwap(Utils.MegaSwapSellData memory data) external payable returns (uint256);
 }
 
-contract SpiritSwapDCA is Ownable {
-	IProxyParaswap public proxy;
-	IERC20 public usdc;
-	IERC20 public tresory;
-
-	constructor(address _proxy, address _automate, address _tresory, address _usdc) Ownable(msg.sender) {
-		proxy = IProxyParaswap(payable(_proxy));
-		tresory = IERC20(_tresory);
-		usdc = IERC20(_usdc);
-	}
-
-	function test() view public returns (bytes memory) {
-		bytes memory execData = abi.encode(
-			"0x1c1138DEC760feBA5c24a578311da41C37B6F5d1",
-			0,
-			"0x26F38E36d2Ba44eE5E7E35655be72852e49Ea04c",			
-			"0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",
-			"0x5Cc61A78F164885776AA610fb0FE1257df78E59B",			
-			Strings.toString(18),
-			Strings.toString(18),
-			Strings.toString(990000000000000000),
-			"250",
-			"spiritswap",
-			"false",
-			"15"
-		);
-		return execData;
-	}
-}
-/*contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
+contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	IProxyParaswap public proxy;
 	IERC20 public tresory;
 	IERC20 public usdc;
@@ -144,6 +115,7 @@ contract SpiritSwapDCA is Ownable {
 
 		_executeOrder(id, argProxy);
 
+		//need to swap tokenIn to FTM to pay fees
 		//(uint256 fee, address feeToken) = _getFeeDetails();
 
         //_transfer(fee, feeToken);
@@ -224,7 +196,7 @@ contract SpiritSwapDCA is Ownable {
 		emit CounterTaskCreated(taskId);
 	}
 
-	function cancelTask(uint256 id) public {
+	function cancelTask(uint256 id) private {
         require(ordersById[id].taskId != bytes32(""), "Task not started");
 		bytes32 taskId = ordersById[id].taskId;
 		ordersById[id].taskId = bytes32("");
@@ -307,6 +279,6 @@ contract SpiritSwapDCA is Ownable {
 	function editTresory(address _tresory) public onlyOwner {
 		tresory = IERC20(_tresory);
 	}
-}*/
+}
 
 //Interdire cancelOrder aux gens
