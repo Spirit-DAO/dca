@@ -16,10 +16,39 @@ interface IProxyParaswap {
 	function megaSwap(Utils.MegaSwapSellData memory data) external payable returns (uint256);
 }
 
-contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
+contract SpiritSwapDCA is Ownable {
 	IProxyParaswap public proxy;
 	IERC20 public usdc;
 	IERC20 public tresory;
+
+	constructor(address _proxy, address _automate, address _tresory, address _usdc) Ownable(msg.sender) {
+		proxy = IProxyParaswap(payable(_proxy));
+		tresory = IERC20(_tresory);
+		usdc = IERC20(_usdc);
+	}
+
+	function test() view public returns (bytes memory) {
+		bytes memory execData = abi.encode(
+			address(this),
+			0,
+			"0x26F38E36d2Ba44eE5E7E35655be72852e49Ea04c",			
+			"0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",
+			"0x5Cc61A78F164885776AA610fb0FE1257df78E59B",			
+			Strings.toString(18),
+			Strings.toString(18),
+			Strings.toString(990000000000000000),
+			"250",
+			"spiritswap",
+			"false",
+			"15"
+		);
+		return execData;
+	}
+}
+/*contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
+	IProxyParaswap public proxy;
+	IERC20 public tresory;
+	IERC20 public usdc;
 	
 	uint256 public ordersCount;
 	mapping(uint256 => Order) public ordersById;
@@ -185,7 +214,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
 			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period)
+			uint128(ordersById[id].period * 10)//Milliseconds
 		);
 
 		bytes32 taskId = _createTask(address(this), execData, moduleData, address(0));
@@ -278,4 +307,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	function editTresory(address _tresory) public onlyOwner {
 		tresory = IERC20(_tresory);
 	}
-}
+}*/
+
+//Interdire cancelOrder aux gens
