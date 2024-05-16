@@ -29,7 +29,7 @@ contract SpiritSwapDCA is Ownable {
 
 	function test() view public returns (bytes memory) {
 		bytes memory execData = abi.encode(
-			address(this),
+			"0x1c1138DEC760feBA5c24a578311da41C37B6F5d1",
 			0,
 			"0x26F38E36d2Ba44eE5E7E35655be72852e49Ea04c",			
 			"0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",
