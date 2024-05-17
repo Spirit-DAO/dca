@@ -189,7 +189,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 			uint128(ordersById[id].period * 1000)
 		);
 
-		bytes32 taskId = _createTask(address(this), execData, moduleData, address(0));
+		bytes32 taskId = _createTask(address(this), execData, moduleData, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 	
 		ordersById[id].taskId = taskId;
 		
