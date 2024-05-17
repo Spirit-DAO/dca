@@ -156,18 +156,18 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
 		bytes memory execData = abi.encode(
-			address(this),													//dca
-			id,																//id
-			ordersById[id].user,											//userAddress						
-			ordersById[id].tokenIn,											//srcToken
-			ordersById[id].tokenOut,										//destToken
-			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()),		//srcDecimals
-			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()),	//destDecimals
-			Strings.toString((ordersById[id].amountIn / 100) * 99),			//amount
-			"250",															//network
-			"spiritswap",													//partner
-			"false",														//otherExchangePrices
-			"15"															//maxImpact
+			Strings.toHexString(uint256(uint160(address(this))), 20),						//dca
+			id,																				//id
+			Strings.toHexString((uint256(uint160(ordersById[id].user))), 20),				//userAddress						
+			Strings.toHexString((uint256(uint160(ordersById[id].tokenIn))), 20),			//srcToken
+			Strings.toHexString((uint256(uint160(ordersById[id].tokenOut))), 20),			//destToken
+			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()),						//srcDecimals
+			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()),					//destDecimals
+			Strings.toString((ordersById[id].amountIn / 100) * 99),							//amount
+			"250",																			//network
+			"spiritswap",																	//partner
+			"false",																		//otherExchangePrices
+			"15"																			//maxImpact
 		);
 
 		ModuleData memory moduleData = ModuleData({
