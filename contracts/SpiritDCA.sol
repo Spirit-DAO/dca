@@ -87,7 +87,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 
 		uint256 balanceBefore = tokenOut.balanceOf(user);
 		ordersById[id].totalExecutions += 1;
-		ordersById[id].totalAmountIn += ordersById[id].amountIn;
+		ordersById[id].totalAmountIn += ordersById[id].amountIn - fees;
         SpiritDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
 		
