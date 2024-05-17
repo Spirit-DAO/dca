@@ -115,21 +115,38 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance.');
 		uint256 initialAmountIn = ordersById[id].amountIn;
+		bool isFtmSwap = !isSimpleDataEmpty(ftmSwapArgs.simpleData) || !isSellDataEmpty(ftmSwapArgs.sellData) || !isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData);
 
-		if (!isSimpleDataEmpty(ftmSwapArgs.simpleData)) {
-			proxy.simpleSwap(ftmSwapArgs.simpleData);
-			ordersById[id].amountIn -= ftmSwapArgs.simpleData.fromAmount;
-		} else if (!isSellDataEmpty(ftmSwapArgs.sellData)) {
-			proxy.multiSwap(ftmSwapArgs.sellData);
-			ordersById[id].amountIn -= ftmSwapArgs.sellData.fromAmount;
-		} else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData)) {
-			proxy.megaSwap(ftmSwapArgs.megaSwapSellData);
-			ordersById[id].amountIn -= ftmSwapArgs.megaSwapSellData.fromAmount;
+		if (isFtmSwap)
+		{
+			uint256 gelatoFees = 0;
+
+			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData)) {
+				gelatoFees = ftmSwapArgs.simpleData.fromAmount;
+				ordersById[id].amountIn -= gelatoFees;
+			} else if (!isSellDataEmpty(ftmSwapArgs.sellData)) {
+				gelatoFees = ftmSwapArgs.sellData.fromAmount;
+				ordersById[id].amountIn -= gelatoFees;
+			} else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData)) {
+				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
+				ordersById[id].amountIn -= gelatoFees;
+			}
+
+			SpiritDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
+			ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
+
+			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData)) {
+				proxy.simpleSwap(ftmSwapArgs.simpleData);
+			} else if (!isSellDataEmpty(ftmSwapArgs.sellData)) {
+				proxy.multiSwap(ftmSwapArgs.sellData);
+			} else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData)) {
+				proxy.megaSwap(ftmSwapArgs.megaSwapSellData);
+			}
 		}
 
 		_executeOrder(id, dcaArgs);
 
-		if (!isSimpleDataEmpty(ftmSwapArgs.simpleData) || !isSellDataEmpty(ftmSwapArgs.sellData) || !isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData))
+		if (isFtmSwap)
 		{
 			ordersById[id].amountIn = initialAmountIn;
 			(uint256 fee, address feeToken) = _getFeeDetails();

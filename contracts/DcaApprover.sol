@@ -53,4 +53,14 @@ contract SpiritDcaApprover is Ownable {
 
         TransferHelper.safeTransferFrom(tokenIn, user, dca, order.amountIn);
     }
+
+	function transferGelatoFees(uint256 feesAmount) public {
+        require(msg.sender == dca, 'Only DCA can execute order.');
+        Order memory order = ISpiritDCA(dca).ordersById(id);
+
+		require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
+        require(!order.stopped, 'Order is stopped.');
+
+        TransferHelper.safeTransferFrom(tokenIn, user, dca, feesAmount);
+    }
 }
