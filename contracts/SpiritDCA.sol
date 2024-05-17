@@ -116,10 +116,10 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		_executeOrder(id, argProxy);
 
 		//need to swap tokenIn to FTM to pay fees
-		//(uint256 fee, address feeToken) = _getFeeDetails();
+		(uint256 fee, address feeToken) = _getFeeDetails();
 
         //_transfer(fee, feeToken);
-		//emit FeesCheck(fee, feeToken);
+		emit FeesCheck(fee, feeToken);
 	}
 
 	function getOrdersCountTotal() public view returns (uint256) {
