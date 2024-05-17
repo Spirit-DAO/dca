@@ -118,7 +118,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		//need to swap tokenIn to FTM to pay fees
 		(uint256 fee, address feeToken) = _getFeeDetails();
 
-        //_transfer(fee, feeToken);
+        _transfer(fee, feeToken);
 		emit FeesCheck(fee, feeToken);
 	}
 
@@ -186,7 +186,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
 			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period * 10)//Milliseconds
+			uint128(ordersById[id].period * 1000)
 		);
 
 		bytes32 taskId = _createTask(address(this), execData, moduleData, address(0));
