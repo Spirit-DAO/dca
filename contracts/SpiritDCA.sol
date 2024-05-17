@@ -215,12 +215,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmVxYA3Z6NGhps7Snd8qPjomjCuMtdABqvA9Ahop2Edee3",
+			"QmRdDeJB22VctmyDRCn4j21WgtNNjbZmQCC2KSgRmdsoLM",
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
 			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period * 1000)
+			uint128(ordersById[id].period * 1000) + 10
 		);
 
 		bytes32 taskId = _createTask(address(this), execData, moduleData, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
@@ -313,6 +313,8 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	function editTresory(address _tresory) public onlyOwner {
 		tresory = IERC20(_tresory);
 	}
+
+	receive() external payable {}
 }
 
 //Interdire cancelOrder aux gens
