@@ -108,7 +108,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
 	}
 	
-	// Pol amountOut will be different due to gelato fees
 	function executeOrder(uint256 id, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public {
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
@@ -215,12 +214,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmRdDeJB22VctmyDRCn4j21WgtNNjbZmQCC2KSgRmdsoLM",
+			"QmSNAJr7PKQa2zu6mFUV2JgLz3ieGx5YxJdEJpggNtSHaV",
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
 			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period * 1000) + 10
+			uint128(ordersById[id].period * 1000) + 60
 		);
 
 		bytes32 taskId = _createTask(address(this), execData, moduleData, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
