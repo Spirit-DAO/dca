@@ -36,13 +36,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event OrderStopped(address indexed user, uint256 indexed id);
 	event OrderRestarted(address indexed user, uint256 indexed id);
 	event OrderExecuted(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
-	event OrderFailed(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 
 	// Event for GELATO
 	event GelatoTaskCreated(bytes32 id);
 	event GelatoTaskCanceled(bytes32 id);
-	event GelatoTaskFailed(uint256 orderId, bytes32 taskId, string message);
 	event GelatoFeesCheck(uint256 fees, address token);
+	event GelatoTaskFailed(uint256 orderId, bytes32 taskId, string message);
 
 	// Event for Misc
 	event EditedUSDC(address usdc);
@@ -219,7 +218,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmUqQYd7QxXHxqZbiB25GgNDid5BZqM7CANWh53q5DiWZ2",
+			"QmQ7ASpW9BTbMe4BAgNaRhBSZEZ3fjXDtYDXkupDd7epcT",
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
@@ -242,6 +241,14 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         _cancelTask(taskId);
 
 		emit GelatoTaskCanceled(taskId);
+    }
+
+	function errorTask(uint256 id, string calldata errorMessage) external {
+		(uint256 fee, address feeToken) = _getFeeDetails();
+
+        _transfer(fee, feeToken);
+		emit GelatoFeesCheck(fee, feeToken);
+		emit GelatoTaskFailed(id, ordersById[id].taskId, errorMessage);
     }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
