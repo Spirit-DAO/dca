@@ -247,6 +247,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		(uint256 fee, address feeToken) = _getFeeDetails();
 
         _transfer(fee, feeToken);
+		cancelTask(id);
 		emit GelatoFeesCheck(fee, feeToken);
 		emit GelatoTaskFailed(id, ordersById[id].taskId, errorMessage);
     }
