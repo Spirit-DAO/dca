@@ -19,7 +19,6 @@ interface IProxyParaswap {
 contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	IProxyParaswap public proxy;
 	IERC20 public tresory;
-	IERC20 public usdc;
 	
 	uint256 public ordersCount;
 	mapping(uint256 => Order) public ordersById;
@@ -51,10 +50,9 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event WithdrawnFees(address tresory, uint256 amount);
 
 
-	constructor(address _proxy, address _automate, address _tresory, address _usdc) Ownable(msg.sender) AutomateTaskCreator(_automate) {
+	constructor(address _proxy, address _automate, address _tresory) Ownable(msg.sender) AutomateTaskCreator(_automate) {
 		proxy = IProxyParaswap(payable(_proxy));
 		tresory = IERC20(_tresory);
-		usdc = IERC20(_usdc);
 	}
 
 	function isSimpleDataEmpty(Utils.SimpleData memory _simpleData) pure private returns (bool) {
@@ -312,12 +310,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		emit OrderRestarted(msg.sender, id);
 	}
 
-	function editUSDC(address _usdc) public onlyOwner {
-		usdc = IERC20(_usdc);
-
-		emit EditedUSDC(_usdc);
-	}
-
 	function editTresory(address _tresory) public onlyOwner {
 		tresory = IERC20(_tresory);
 
@@ -328,8 +320,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         uint256 balance = address(this).balance;
         require(balance > 0, "No FTM to withdraw");
 
-		address payable destination = payable(address(tresory));
-		destination.transfer(balance);
+		payable(address(tresory)).transfer(balance);
 
 		emit WithdrawnFees(address(tresory), balance);
     }

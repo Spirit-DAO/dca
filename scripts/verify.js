@@ -15,8 +15,7 @@ async function main() {
 		constructorArguments: [
 			deploysExtraData.proxy,
 			deploysExtraData.gelato,
-			deploysExtraData.tresory,
-			deploysExtraData.usdc
+			deploysExtraData.tresory
 		],
 	});
 }
