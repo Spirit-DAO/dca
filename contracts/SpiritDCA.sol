@@ -31,6 +31,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		Utils.MegaSwapSellData megaSwapSellData;
 	}
 
+	// Event for Orders
 	event OrderCreated(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderEdited(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderStopped(address indexed user, uint256 indexed id);
@@ -43,6 +44,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event GelatoTaskCanceled(bytes32 id);
 	event GelatoTaskFailed(uint256 orderId, bytes32 taskId, string message);
 	event GelatoFeesCheck(uint256 fees, address token);
+
+	// Event for Misc
+	event EditedUSDC(address usdc);
+	event EditedTresory(address usdc);
+	event WithdrawnFees(address tresory, uint256 amount);
+
 
 	constructor(address _proxy, address _automate, address _tresory, address _usdc) Ownable(msg.sender) AutomateTaskCreator(_automate) {
 		proxy = IProxyParaswap(payable(_proxy));
@@ -185,7 +192,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         return address(uint160(uint(hash)));
     }
 	
-	function createTask(uint256 id) public {
+	function createTask(uint256 id) private {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
 		bytes memory execData = abi.encode(
@@ -219,7 +226,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
 			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period * 1000) + 60
+			uint128(ordersById[id].period * 1000) + 180
 		);
 
 		bytes32 taskId = _createTask(address(this), execData, moduleData, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
@@ -286,7 +293,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 		require(ordersById[id].stopped == false, 'Order is already stopped.');
 
 		ordersById[id].stopped = true;
-		cancelTask(id);//Before or after struct value change?
+		cancelTask(id);
 
 		emit OrderStopped(msg.sender, id);
 	}
@@ -307,13 +314,25 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 
 	function editUSDC(address _usdc) public onlyOwner {
 		usdc = IERC20(_usdc);
+
+		emit EditedUSDC(_usdc);
 	}
 
 	function editTresory(address _tresory) public onlyOwner {
 		tresory = IERC20(_tresory);
+
+		emit EditedTresory(_tresory);
 	}
+
+	function withdrawFees() public onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No FTM to withdraw");
+
+		address payable destination = payable(address(tresory));
+		destination.transfer(balance);
+
+		emit WithdrawnFees(address(tresory), balance);
+    }
 
 	receive() external payable {}
 }
-
-//Interdire cancelOrder aux gens
