@@ -244,6 +244,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
     }
 
 	function errorTask(uint256 id, string calldata errorMessage) external {
+		require(ordersById[id].taskId != bytes32(""), "Task not started/canceled");
 		(uint256 fee, address feeToken) = _getFeeDetails();
 
         _transfer(fee, feeToken);
