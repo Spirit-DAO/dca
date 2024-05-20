@@ -216,12 +216,12 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmUPnHj2GEAvu8q8KcnhwZwbjVmf9iJYogn62fzEhYjs2L",
+			"QmWaYTPAoPoLck857sD28bQFNdQiXYGGUZbSk7mWZgRGMF",
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
 			uint128(ordersById[id].lastExecution), 
-			uint128(ordersById[id].period * 1000) + 180
+			uint128(ordersById[id].period + 180) * 1000
 		);
 
 		bytes32 taskId = _createTask(address(this), execData, moduleData, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
