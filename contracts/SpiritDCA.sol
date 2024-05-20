@@ -268,16 +268,16 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 
 		ordersById[id].amountIn = amountIn;
 		ordersById[id].amountOutMin = amountOutMin;
+		cancelTask(id);
 		if (ordersById[id].period != period)
 		{
 			ordersById[id].period = period;
-			cancelTask(id);
 			if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
 			{
 				_executeOrder(id, dcaArgs);
 			}
-			createTask(id);
 		}
+		createTask(id);
 
 		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
 	}
