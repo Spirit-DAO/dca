@@ -41,10 +41,8 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event GelatoTaskCreated(bytes32 id);
 	event GelatoTaskCanceled(bytes32 id);
 	event GelatoFeesCheck(uint256 fees, address token);
-	event GelatoTaskFailed(uint256 orderId, bytes32 taskId, string message);
 
 	// Event for Misc
-	event EditedUSDC(address usdc);
 	event EditedTresory(address usdc);
 	event WithdrawnFees(address tresory, uint256 amount);
 
@@ -218,7 +216,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmeHZtE4bBKA8TZEBrctZg82S2r42K8ABbbMKCBFFV9YCS",
+			"QmUPnHj2GEAvu8q8KcnhwZwbjVmf9iJYogn62fzEhYjs2L",
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
@@ -241,16 +239,6 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
         _cancelTask(taskId);
 
 		emit GelatoTaskCanceled(taskId);
-    }
-
-	function errorTask(uint256 id, string calldata errorMessage) external {
-		require(ordersById[id].taskId != bytes32(""), "Task not started/canceled");
-		(uint256 fee, address feeToken) = _getFeeDetails();
-
-        _transfer(fee, feeToken);
-		cancelTask(id);
-		emit GelatoFeesCheck(fee, feeToken);
-		emit GelatoTaskFailed(id, ordersById[id].taskId, errorMessage);
     }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
