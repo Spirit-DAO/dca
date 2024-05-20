@@ -21,7 +21,7 @@ const config: HardhatUserConfig = {
 		url: "https://rpc.ankr.com/fantom",
 		chainId: 250,
 		accounts: [`${PRIVATE_KEY}`],
-		gasPrice: 58000000000,
+		gas: 20,
 	},
 	tenderly: {
 		url: "https://rpc.tenderly.co/fork/4cd14cfd-4036-4cd6-a8ff-bc6c8163fc44",

@@ -2,7 +2,7 @@ const hre = require("hardhat");
 const fs = require('fs');
 const path = require('path');
 
-//address _proxy, address _automate, address _tresory, address _usdc
+//address _proxy, address _automate, address _tresory
 
 async function main() {
 	const deployDataPath = path.resolve(__dirname, '../deploys.json');
