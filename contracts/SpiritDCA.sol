@@ -242,7 +242,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
     }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
-		require(period > 24 * 60 * 60, 'Period must be greater than 1 day.');
+		require(period >= 24 * 60 * 60, 'Period must be greater than 1 day.');
 		require(amountIn > 0, 'AmountIn must be greater than 0.');
 		require(tokenIn != tokenOut, 'TokenOut must be different.');
 		require(tokenIn != address(0), 'Invalid tokenIn.');
@@ -263,7 +263,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].user == msg.sender, 'Order does not belong to user.');
-		require(period > 24 * 60 * 60, 'Period must be greater than 1 day.');
+		require(period >= 24 * 60 * 60, 'Period must be greater than 1 day.');
 		require(amountIn > 0, 'AmountIn must be greater than 0.');
 		require(amountOutMin >= 0, 'AmountOutMin must be greater or equal 0.');
 
