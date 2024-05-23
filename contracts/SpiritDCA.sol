@@ -5,9 +5,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Utils} from "contracts/Libraries/Utils.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import 'contracts/DcaApprover.sol';
-import 'contracts/Integrations/Gelato/AutomateTaskCreator.sol';
-
 import "@openzeppelin/contracts/utils/Strings.sol";
+
+import 'contracts/Integrations/Gelato/AutomateTaskCreator.sol';
 import {IOpsProxy} from "contracts/Interfaces/IOpsProxy.sol";
 
 interface IProxyParaswap {
