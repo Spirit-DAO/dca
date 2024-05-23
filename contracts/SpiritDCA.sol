@@ -16,7 +16,7 @@ interface IProxyParaswap {
 	function megaSwap(Utils.MegaSwapSellData memory data) external payable returns (uint256);
 }
 
-contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
+contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	IProxyParaswap public proxy;
 	IERC20 public tresory;
 	
@@ -47,7 +47,7 @@ contract SpiritSwapDCA is Ownable, AutomateTaskCreator {
 	event WithdrawnFees(address tresory, uint256 amount);
 
 
-	constructor(address _proxy, address _automate, address _tresory) Ownable(msg.sender) AutomateTaskCreator(_automate) {
+	constructor(address _proxy, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
 		proxy = IProxyParaswap(payable(_proxy));
 		tresory = IERC20(_tresory);
 	}
