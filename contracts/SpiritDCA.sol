@@ -214,7 +214,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmQSxqzvsULnb1RQFvtonPbCtXcynPeQymDpc4URw8jErJ",
+			"QmYnsb6UjNGD7LZ4uVaNja1dJBUCN8TKXS2LBieZWz1KtX",
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
@@ -240,7 +240,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
     }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
-		//require(period >= 1 days, 'Period must be greater than 1 day.');
+		require(period >= 1 days, 'Period must be greater than 1 day.');
 		require(amountIn > 0, 'AmountIn must be greater than 0.');
 		require(tokenIn != tokenOut, 'TokenOut must be different.');
 		require(tokenIn != address(0), 'Invalid tokenIn.');
