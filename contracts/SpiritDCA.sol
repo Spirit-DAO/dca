@@ -267,17 +267,12 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		require(amountIn > 0, 'AmountIn must be greater than 0.');
 		require(amountOutMin >= 0, 'AmountOutMin must be greater or equal 0.');
 
+		cancelTask(id);
 		ordersById[id].amountIn = amountIn;
 		ordersById[id].amountOutMin = amountOutMin;
-		cancelTask(id);
-		if (ordersById[id].period != period)
-		{
-			ordersById[id].period = period;
-			if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
-			{
-				_executeOrder(id, dcaArgs);
-			}
-		}
+		ordersById[id].period = period;
+		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
+			_executeOrder(id, dcaArgs);
 		createTask(id);
 
 		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
