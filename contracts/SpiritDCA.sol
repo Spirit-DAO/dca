@@ -122,7 +122,9 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		{
 			uint256 gelatoFees = 0;
 
-			ordersById[id].amountIn = amountWithGelatoFees;
+			if (amountWithGelatoFees < ordersById[id].amountIn)
+				ordersById[id].amountIn = amountWithGelatoFees;
+
 			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData))
 				gelatoFees = ftmSwapArgs.simpleData.fromAmount;
 			else if (!isSellDataEmpty(ftmSwapArgs.sellData))
