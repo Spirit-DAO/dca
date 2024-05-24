@@ -110,7 +110,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
 	}
 	
-	function executeOrder(uint256 id, uint256 amountWithGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public {
+	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public {
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
@@ -122,8 +122,8 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		{
 			uint256 gelatoFees = 0;
 
-			if (amountWithGelatoFees < ordersById[id].amountIn)
-				ordersById[id].amountIn = amountWithGelatoFees;
+			require(amountTokenInGelatoFees < ordersById[id].amountIn, 'amountTokenInGelatoFees too high.');
+			ordersById[id].amountIn -= amountTokenInGelatoFees;
 
 			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData))
 				gelatoFees = ftmSwapArgs.simpleData.fromAmount;
@@ -230,7 +230,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	}
 
 	function cancelTask(uint256 id) private {
-        require(ordersById[id].taskId != bytes32(""), "Task not started");
+        require(ordersById[id].taskId != bytes32(""), "Task not started.");
 		bytes32 taskId = ordersById[id].taskId;
 		ordersById[id].taskId = bytes32("");
 
@@ -240,7 +240,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
     }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
-		require(period >= 1 days, 'Period must be greater than 1 day.');
+		//require(period >= 1 days, 'Period must be greater than 1 day.');
 		require(amountIn > 0, 'AmountIn must be greater than 0.');
 		require(tokenIn != tokenOut, 'TokenOut must be different.');
 		require(tokenIn != address(0), 'Invalid tokenIn.');
