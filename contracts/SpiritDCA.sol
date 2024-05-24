@@ -39,7 +39,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 
 	// Event for GELATO
 	event GelatoTaskCreated(bytes32 id);
-	event GelatoTaskCanceled(bytes32 id);
+	event GelatoTaskCancelled(bytes32 id);
 	event GelatoFeesCheck(uint256 fees, address token);
 
 	// Event for Misc
@@ -110,7 +110,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
 	}
 	
-	function executeOrder(uint256 id, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public {
+	function executeOrder(uint256 id, uint256 amountWithGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public {
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
@@ -122,27 +122,23 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		{
 			uint256 gelatoFees = 0;
 
-			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData)) {
+			ordersById[id].amountIn = amountWithGelatoFees;
+			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData))
 				gelatoFees = ftmSwapArgs.simpleData.fromAmount;
-				ordersById[id].amountIn -= gelatoFees;
-			} else if (!isSellDataEmpty(ftmSwapArgs.sellData)) {
+			else if (!isSellDataEmpty(ftmSwapArgs.sellData))
 				gelatoFees = ftmSwapArgs.sellData.fromAmount;
-				ordersById[id].amountIn -= gelatoFees;
-			} else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData)) {
+			else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData))
 				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
-				ordersById[id].amountIn -= gelatoFees;
-			}
 
 			SpiritDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
 			ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
 
-			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData)) {
+			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData))
 				proxy.simpleSwap(ftmSwapArgs.simpleData);
-			} else if (!isSellDataEmpty(ftmSwapArgs.sellData)) {
+			else if (!isSellDataEmpty(ftmSwapArgs.sellData))
 				proxy.multiSwap(ftmSwapArgs.sellData);
-			} else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData)) {
+			else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData))
 				proxy.megaSwap(ftmSwapArgs.megaSwapSellData);
-			}
 		}
 
 		_executeOrder(id, dcaArgs);
@@ -216,7 +212,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmQfwWunD95HXDKqvbtcQMgBYUJC5ky259ub38A2i9E8N8",
+			"QmQSxqzvsULnb1RQFvtonPbCtXcynPeQymDpc4URw8jErJ",
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
@@ -238,7 +234,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 
         _cancelTask(taskId);
 
-		emit GelatoTaskCanceled(taskId);
+		emit GelatoTaskCancelled(taskId);
     }
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
