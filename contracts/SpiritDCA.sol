@@ -30,6 +30,8 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		Utils.MegaSwapSellData megaSwapSellData;
 	}
 
+	string private scriptCID = "QmatgdMrv1dqwKuhxFi6stHctQUGrb8GQg6NBs68mxCZhY";
+
 	// Event for Orders
 	event OrderCreated(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderEdited(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
@@ -214,7 +216,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	
 		moduleData.args[0] = _proxyModuleArg();
 		moduleData.args[1] = _web3FunctionModuleArg(
-			"QmRk3npQdHo7uqYHPpmM7TVwbNVCcaSHZ5Gw61HgMH4jHL",
+			scriptCID,
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
@@ -306,6 +308,11 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 
 		emit EditedTresory(_tresory);
 	}
+
+	function editScriptCID(string memory _cid) public onlyOwner {
+		scriptCID = _cid;
+	}
+
 
 	function withdrawFees() public onlyOwner {
         uint256 balance = address(this).balance;
