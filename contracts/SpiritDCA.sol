@@ -30,7 +30,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		Utils.MegaSwapSellData megaSwapSellData;
 	}
 
-	string private scriptCID = "QmatgdMrv1dqwKuhxFi6stHctQUGrb8GQg6NBs68mxCZhY";
+	string private scriptCID = "QmPWpjsLcCQ19zgYquUWh2CUojQAcLuvFyC74bisihUveZ";
 
 	// Event for Orders
 	event OrderCreated(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
