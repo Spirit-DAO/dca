@@ -21,7 +21,7 @@ interface IProxyParaswap {
 /// @title SilverSwap DCA Contract
 /// @author github.com/SifexPro
 /// @notice This contract allows users to create DCA orders on the SilverSwap platform
-contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
+contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	// Utils variables
 	IProxyParaswap public proxy;
 	IERC20 public tresory;
@@ -97,7 +97,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		uint256 balanceBefore = tokenOut.balanceOf(user);
 		ordersById[id].totalExecutions += 1;
 		ordersById[id].totalAmountIn += ordersById[id].amountIn - fees;
-        SpiritDcaApprover(ordersById[id].approver).executeOrder();
+        SilverDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
 		
 		require(tokenIn.transfer(address(tresory), fees), "Failed to transfer fees."); // L-03 
@@ -150,7 +150,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 			else if (isMegaSwap)	// G-03
 				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
 
-			SpiritDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
+			SilverDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
 			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), ordersById[id].amountIn); // L-06
 			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
 			
@@ -192,7 +192,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		require(tokenIn != address(0), 'Invalid tokenIn.');
 		require(tokenOut != address(0), 'Invalid tokenOut.');
 
-        address approver = address(new SpiritDcaApprover{salt: bytes32(ordersCount)}(ordersCount, msg.sender, tokenIn));
+        address approver = address(new SilverDcaApprover{salt: bytes32(ordersCount)}(ordersCount, msg.sender, tokenIn));
 		Order memory order = Order(msg.sender, tokenIn, tokenOut, amountIn, amountOutMin, period, 0, 0, 0, 0, block.timestamp, false, approver, 0);
 		ordersById[ordersCount] = order;
 		idByAddress[msg.sender].push(ordersCount);
@@ -278,7 +278,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()),					//destDecimals
 			Strings.toString((ordersById[id].amountIn * 99) / 100),							//amount
 			"250",																			//network
-			"spiritswap",																	//partner
+			"spiritswap",																	//partner -> need to be changed (silverswap)
 			"false",																		//otherExchangePrices
 			"15"																			//maxImpact
 		);
@@ -351,7 +351,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
     }
 
     function getApproveBytecode(uint256 _id, address _user, address _tokenIn) public pure returns (bytes memory) {
-        bytes memory bytecode = type(SpiritDcaApprover).creationCode;
+        bytes memory bytecode = type(SilverDcaApprover).creationCode;
 
         return abi.encodePacked(bytecode, abi.encode(_id, _user, _tokenIn));
     }

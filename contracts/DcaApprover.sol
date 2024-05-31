@@ -3,7 +3,7 @@ pragma solidity =0.8.20;
 
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/access/Ownable.sol";
-import 'hardhat/console.sol';
+
 import 'contracts/Libraries/TransferHelper.sol';
 
 struct Order {
@@ -23,11 +23,11 @@ struct Order {
 	bytes32	taskId;
 }
 
-interface ISpiritDCA {
+interface ISilverDCA {
     function ordersById(uint256) external returns (Order memory);
 }
 
-contract SpiritDcaApprover is Ownable {
+contract SilverDcaApprover is Ownable {
 	ERC20 public usdc;
 	ERC20 public tresory;
 
@@ -46,7 +46,7 @@ contract SpiritDcaApprover is Ownable {
 
     function executeOrder() public {
         require(msg.sender == dca, 'Only DCA can execute order.');
-        Order memory order = ISpiritDCA(dca).ordersById(id);
+        Order memory order = ISilverDCA(dca).ordersById(id);
 
 		require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
         require(!order.stopped, 'Order is stopped.');
@@ -56,7 +56,7 @@ contract SpiritDcaApprover is Ownable {
 
 	function transferGelatoFees(uint256 feesAmount) public {
         require(msg.sender == dca, 'Only DCA can execute order.');
-        Order memory order = ISpiritDCA(dca).ordersById(id);
+        Order memory order = ISilverDCA(dca).ordersById(id);
 
 		require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
         require(!order.stopped, 'Order is stopped.');
