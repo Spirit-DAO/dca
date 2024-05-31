@@ -345,3 +345,4 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		_;
 	} 
 }
+// check G-01
