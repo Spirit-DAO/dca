@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.20;
-//L-04 
+pragma solidity >=0.8.20; // L-04 (Fixed ?)
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";//Ownable2Step L-05
+import "@openzeppelin/contracts/access/Ownable.sol";// L-05: Ownable2Step
 import "@openzeppelin/contracts/utils/Strings.sol";
 import 'contracts/Libraries/TransferHelper.sol';
 
@@ -99,8 +98,8 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
         SpiritDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
 		
-		require(tokenIn.transfer(address(tresory), fees), "Failed to transfer fees.");
-		TransferHelper.safeApprove(address(tokenIn), address(proxy), ordersById[id].amountIn - fees);//L-06
+		require(tokenIn.transfer(address(tresory), fees), "Failed to transfer fees."); // L-03 
+		TransferHelper.safeApprove(address(tokenIn), address(proxy), ordersById[id].amountIn - fees); // L-06
 		//tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
 		if (!isSimpleDataEmpty(dcaArgs.simpleData)) {
 			proxy.simpleSwap(dcaArgs.simpleData);
@@ -118,7 +117,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	}
 	
 	//Additionally, implement restrictions for ftmSwapArgs and dcaArgs
-	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender {
+	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender { // H-03 (onlyOwnerOrDedicatedMsgSender)
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
@@ -141,7 +140,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
 
 			SpiritDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
-			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), ordersById[id].amountIn);//L-06
+			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), ordersById[id].amountIn); // L-06
 			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
 			
 
@@ -198,7 +197,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	function createTask(uint256 id) private {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
-		bytes memory execData = abi.encode(
+		bytes memory execData = abi.encode( // H-01 (amount)
 			Strings.toHexString(uint256(uint160(address(this))), 20),						//dca
 			id,																				//id
 			Strings.toHexString((uint256(uint160(ordersById[id].user))), 20),				//userAddress						
@@ -251,8 +250,8 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
 		require(period >= 1 days, 'Period must be greater than 1 day.');
-		require(amountIn >= 100, 'AmountIn must be greater than 99.');
-		require(amountOutMin > 0, 'AmountOutMin must be greater 0.');
+		require(amountIn >= 100, 'AmountIn must be greater than 99.'); // H-02
+		require(amountOutMin > 0, 'AmountOutMin must be greater 0.'); // L-02
 		require(tokenIn != tokenOut, 'TokenOut must be different.');
 		require(tokenIn != address(0), 'Invalid tokenIn.');
 		require(tokenOut != address(0), 'Invalid tokenOut.');
@@ -324,7 +323,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit EditedScriptCID(_cid);
 	}
 
-	modifier onlyOwnerOrDedicatedMsgSender() {
+	modifier onlyOwnerOrDedicatedMsgSender() { // H-03
 		require(msg.sender == owner() || msg.sender == dedicatedMsgSender, 'Not authorized.');
 		_;
 	} 
