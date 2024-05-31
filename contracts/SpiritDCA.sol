@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 //L-04 
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Utils} from "contracts/Libraries/Utils.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";//Ownable2Step L-05
 import "@openzeppelin/contracts/utils/Strings.sol";
+import 'contracts/Libraries/TransferHelper.sol';
 
+import {Utils} from "contracts/Libraries/Utils.sol";
 import 'contracts/DcaApprover.sol';
 
 import 'contracts/Integrations/Gelato/AutomateTaskCreator.sol';
@@ -99,7 +100,8 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		ordersById[id].lastExecution = block.timestamp;
 		
 		require(tokenIn.transfer(address(tresory), fees), "Failed to transfer fees.");
-		tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
+		TransferHelper.safeApprove(address(tokenIn), address(proxy), ordersById[id].amountIn - fees);//L-06
+		//tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
 		if (!isSimpleDataEmpty(dcaArgs.simpleData)) {
 			proxy.simpleSwap(dcaArgs.simpleData);
 		} else if (!isSellDataEmpty(dcaArgs.sellData)) {
@@ -139,7 +141,9 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
 
 			SpiritDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
-			ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
+			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), ordersById[id].amountIn);//L-06
+			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
+			
 
 			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData))
 				proxy.simpleSwap(ftmSwapArgs.simpleData);
