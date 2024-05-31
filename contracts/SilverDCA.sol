@@ -41,22 +41,28 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	// Script CID for Gelato
 	string private scriptCID = "QmPWpjsLcCQ19zgYquUWh2CUojQAcLuvFyC74bisihUveZ";
 
-	// Event for Orders
+	// Events for Orders
 	event OrderCreated(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderEdited(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderStopped(address indexed user, uint256 indexed id);
 	event OrderRestarted(address indexed user, uint256 indexed id);
 	event OrderExecuted(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut, uint256 amountOutMin, uint256 period);
 
-	// Event for GELATO
+	// Events for GELATO
 	event GelatoTaskCreated(bytes32 id);
 	event GelatoTaskCancelled(bytes32 id);
 	event GelatoFeesCheck(uint256 fees, address token);
 
-	// Event for Misc
+	// Events for Misc
 	event EditedTresory(address usdc);
 	event EditedScriptCID(string cid);
 	event WithdrawnFees(address tresory, uint256 amount);
+
+	// Error events
+	error ErrorOrderDoesNotExist(uint256 id, uint256 ordersCount);
+	error ErrorNotAuthorized(uint id, address user, address msgSender);
+	error ErrorOrderStopped(uint256 id);
+	error PeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
 
 	constructor(address _proxy, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
 		proxy = IProxyParaswap(payable(_proxy));
@@ -132,10 +138,17 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param ftmSwapArgs the ftmSwapArgs struct for Paraswap execution (for Gelato fees)
 	 */
 	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender { // H-03 (onlyOwnerOrDedicatedMsgSender)
-		require(id < getOrdersCountTotal(), 'Order does not exist');
-		require(ordersById[id].stopped == false, 'Order is stopped');
-		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed');
+		//require(id < getOrdersCountTotal(), 'Order does not exist');
+		if (id >= getOrdersCountTotal()) // G-02
+			revert ErrorOrderDoesNotExist(id, getOrdersCountTotal());
+		//require(ordersById[id].stopped == false, 'Order is stopped');
+		if (ordersById[id].stopped) // G-02
+			revert ErrorOrderStopped(id);
+		//require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed');
+		if (block.timestamp - ordersById[id].lastExecution < ordersById[id].period) // G-02
+			revert PeriodNotElapsed(id, ordersById[id].lastExecution, block.timestamp, ordersById[id].lastExecution + ordersById[id].period);
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance');
+
 		uint256 initialAmountIn = ordersById[id].amountIn;
 		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
 		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
@@ -241,7 +254,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param id the order id
 	 */
 	function stopOrder(uint256 id) public onlyUser(id){
-		require(ordersById[id].stopped == false, 'Order is already stopped.');
+		//require(ordersById[id].stopped == false, 'Order is already stopped.');
+		if (ordersById[id].stopped) // G-02
+			revert ErrorOrderStopped(id);
 
 		ordersById[id].stopped = true;
 		cancelTask(id);
@@ -419,8 +434,12 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	}
 	
 	modifier onlyUser(uint256 id) { // G-04
-		require(id < getOrdersCountTotal(), 'Order does not exist');
-		require(ordersById[id].user == msg.sender, 'Not authorized');
+		//require(id < getOrdersCountTotal(), 'Order does not exist');
+		if (id < getOrdersCountTotal()) // G-02
+			revert ErrorOrderDoesNotExist(id, getOrdersCountTotal());
+		//require(ordersById[id].user == msg.sender, 'Not authorized');
+		if (ordersById[id].user != msg.sender) // G-02
+			revert ErrorNotAuthorized(id, ordersById[id].user, msg.sender);
 		_;
 	}
 
@@ -436,12 +455,12 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 // L-01 fixed
 // L-02 fixed
 // L-03 fixed -> need to test
-// L-04 fixed (?)
+// L-04 fixed (?) -> need to be sure = ask
 // L-05 fixed
 // L-06 fixed -> need to test
 
 // G-01 fixed
-// G-02 not fixed -> to do later
+// G-02 fixed -> maybe more ?
 // G-03 fixed -> need to test
 // G-04 fixed -> maybe some more modifiers ?
 // G-05 fixed (?) -> didn't find where I can set as constant -> ask to Hashlock
