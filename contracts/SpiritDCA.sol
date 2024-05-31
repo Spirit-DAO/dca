@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+//L-04 
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Utils} from "contracts/Libraries/Utils.sol";
@@ -96,7 +97,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
         SpiritDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
 		
-		tokenIn.transfer(address(tresory), fees);
+		require(tokenIn.transfer(address(tresory), fees), "Failed to transfer fees.");
 		tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
 		if (!isSimpleDataEmpty(dcaArgs.simpleData)) {
 			proxy.simpleSwap(dcaArgs.simpleData);
