@@ -46,7 +46,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	event OrderEdited(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
 	event OrderStopped(address indexed user, uint256 indexed id);
 	event OrderRestarted(address indexed user, uint256 indexed id);
-	event OrderExecuted(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
+	event OrderExecuted(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut, uint256 amountOutMin, uint256 period);
 
 	// Event for GELATO
 	event GelatoTaskCreated(bytes32 id);
@@ -77,32 +77,34 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 		address user = ordersById[id].user;
 		IERC20 tokenIn = IERC20(ordersById[id].tokenIn);
 		IERC20 tokenOut = IERC20(ordersById[id].tokenOut);
+
 		uint256	fees = ordersById[id].amountIn / 100;
+		uint256 amountIn = ordersById[id].amountIn - fees;
 
 		if (isSimpleSwap) {			// G-03
 			dcaArgs.simpleData.beneficiary = payable(address(user));
 			dcaArgs.simpleData.toToken = ordersById[id].tokenOut;
 			dcaArgs.simpleData.fromToken = ordersById[id].tokenIn;
-			dcaArgs.simpleData.fromAmount = ordersById[id].amountIn - fees;
+			dcaArgs.simpleData.fromAmount = amountIn;
 		} else if (isSellSwap) {	// G-03
 			dcaArgs.sellData.beneficiary = payable(address(user));
 			dcaArgs.sellData.fromToken = ordersById[id].tokenIn;
-			dcaArgs.sellData.fromAmount = ordersById[id].amountIn - fees;
+			dcaArgs.sellData.fromAmount = amountIn;
 		} else if (isMegaSwap) {	// G-03
 			dcaArgs.megaSwapSellData.beneficiary = payable(address(user));
 			dcaArgs.megaSwapSellData.fromToken = ordersById[id].tokenIn;
-			dcaArgs.megaSwapSellData.fromAmount = ordersById[id].amountIn - fees;
+			dcaArgs.megaSwapSellData.fromAmount = amountIn;
 		}
 
 		uint256 balanceBefore = tokenOut.balanceOf(user);
 		ordersById[id].totalExecutions += 1;
-		ordersById[id].totalAmountIn += ordersById[id].amountIn - fees;
+		ordersById[id].totalAmountIn += amountIn;
         SilverDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
 		
 		require(tokenIn.transfer(address(tresory), fees), 'Failed to transfer fees'); // L-03 
-		TransferHelper.safeApprove(address(tokenIn), address(proxy), ordersById[id].amountIn - fees); // L-06
-		//tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
+		TransferHelper.safeApprove(address(tokenIn), address(proxy), amountIn); // L-06
+		//tokenIn.approve(address(proxy), amountIn);
 		if (isSimpleSwap)		// G-03
 			proxy.simpleSwap(dcaArgs.simpleData);
 		else if (isSellSwap)	// G-03
@@ -111,10 +113,14 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 			proxy.megaSwap(dcaArgs.megaSwapSellData);
 		
 		uint256 balanceAfter = tokenOut.balanceOf(user);
-		require(balanceAfter - balanceBefore >= ordersById[id].amountOutMin, 'Too little received');
-		ordersById[id].totalAmountOut += balanceAfter - balanceBefore;
+		uint256 amountOutMin = ordersById[id].amountOutMin;
+		uint amountOut = balanceAfter - balanceBefore;
 
-		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
+		require(amountOut >= amountOutMin, 'Too little received');
+		ordersById[id].totalAmountOut += amountOut;
+
+		uint256 period = ordersById[id].period; //G-06
+		emit OrderExecuted(user, id, address(tokenIn), address(tokenOut), amountIn, amountOut, amountOutMin, period);
 	}
 	
 	//Additionally, implement restrictions for ftmSwapArgs and dcaArgs
@@ -225,7 +231,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 			_executeOrder(id, dcaArgs);
 		createTask(id);
 
-		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
+		address tokenIn = ordersById[id].tokenIn; // G-06
+		address tokenOut = ordersById[id].tokenOut;	// G-06
+		emit OrderEdited(msg.sender, id, tokenIn, tokenOut, amountIn, amountOutMin, period);
 	}
 
 	/**
@@ -396,9 +404,10 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
         uint256 balance = address(this).balance;
         require(balance > 0, 'No FTM to withdraw');
 
-		payable(address(tresory)).transfer(balance);
+		address _tresory = address(tresory); // G-06
+		payable(_tresory).transfer(balance);
 
-		emit WithdrawnFees(address(tresory), balance);
+		emit WithdrawnFees(_tresory, balance);
     }
 
 
@@ -436,4 +445,4 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 // G-03 fixed -> need to test
 // G-04 fixed -> maybe some more modifiers ?
 // G-05 fixed (?) -> didn't find where I can set as constant -> ask to Hashlock
-// G-06 not fixed -> need to understand
+// G-06 fixed
