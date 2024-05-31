@@ -11,7 +11,7 @@ async function main() {
 	const deployExtraDataPath = path.resolve(__dirname, '../deploys_extra.json');
 	let deploysExtraData = JSON.parse(fs.readFileSync(deployExtraDataPath, 'utf8'));
 
-	const dcaFactory = await hre.ethers.getContractFactory("SpiritSwapDCA");
+	const dcaFactory = await hre.ethers.getContractFactory("SilverSwapDCA");
 	const dca = await dcaFactory.deploy(deploysExtraData.proxy, deploysExtraData.gelato, deploysExtraData.tresory);
 
 	await dca.waitForDeployment();
