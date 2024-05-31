@@ -72,7 +72,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
 		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
 		bool isMegaSwap = !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData);	// G-03
-		require(isSimpleSwap || isSellSwap || isMegaSwap, "Invalid dcaArgs");
+		require(isSimpleSwap || isSellSwap || isMegaSwap, 'Invalid dcaArgs');
 
 		address user = ordersById[id].user;
 		IERC20 tokenIn = IERC20(ordersById[id].tokenIn);
@@ -100,7 +100,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
         SilverDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
 		
-		require(tokenIn.transfer(address(tresory), fees), "Failed to transfer fees."); // L-03 
+		require(tokenIn.transfer(address(tresory), fees), 'Failed to transfer fees'); // L-03 
 		TransferHelper.safeApprove(address(tokenIn), address(proxy), ordersById[id].amountIn - fees); // L-06
 		//tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
 		if (isSimpleSwap)		// G-03
@@ -111,7 +111,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 			proxy.megaSwap(dcaArgs.megaSwapSellData);
 		
 		uint256 balanceAfter = tokenOut.balanceOf(user);
-		require(balanceAfter - balanceBefore >= ordersById[id].amountOutMin, 'Too little received.');
+		require(balanceAfter - balanceBefore >= ordersById[id].amountOutMin, 'Too little received');
 		ordersById[id].totalAmountOut += balanceAfter - balanceBefore;
 
 		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
@@ -126,10 +126,10 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	 * @param ftmSwapArgs the ftmSwapArgs struct for Paraswap execution (for Gelato fees)
 	 */
 	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender { // H-03 (onlyOwnerOrDedicatedMsgSender)
-		require(id < getOrdersCountTotal(), 'Order does not exist.');
-		require(ordersById[id].stopped == false, 'Order is stopped.');
-		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
-		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance.');
+		require(id < getOrdersCountTotal(), 'Order does not exist');
+		require(ordersById[id].stopped == false, 'Order is stopped');
+		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed');
+		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance');
 		uint256 initialAmountIn = ordersById[id].amountIn;
 		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
 		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
@@ -140,7 +140,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 		{
 			uint256 gelatoFees = 0;
 
-			require(amountTokenInGelatoFees < ordersById[id].amountIn, 'amountTokenInGelatoFees too high.');
+			require(amountTokenInGelatoFees < ordersById[id].amountIn, 'amountTokenInGelatoFees too high');
 			ordersById[id].amountIn -= amountTokenInGelatoFees;
 
 			if (isSimpleSwap)		// G-03
@@ -185,12 +185,12 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
-		require(period >= 1 days, 'Period must be greater than 1 day.');
-		require(amountIn >= 100, 'AmountIn must be greater than 99.'); // H-02
-		require(amountOutMin > 0, 'AmountOutMin must be greater 0.'); // L-02
-		require(tokenIn != tokenOut, 'TokenOut must be different.');
-		require(tokenIn != address(0), 'Invalid tokenIn.');
-		require(tokenOut != address(0), 'Invalid tokenOut.');
+		require(period >= 1 days, 'Period must be > 1 day');
+		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
+		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
+		require(tokenIn != tokenOut, 'TokenOut must be different');
+		require(tokenIn != address(0), 'Invalid tokenIn');
+		require(tokenOut != address(0), 'Invalid tokenOut');
 
         address approver = address(new SilverDcaApprover{salt: bytes32(ordersCount)}(ordersCount, msg.sender, tokenIn));
 		Order memory order = Order(msg.sender, tokenIn, tokenOut, amountIn, amountOutMin, period, 0, 0, 0, 0, block.timestamp, false, approver, 0);
@@ -213,9 +213,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
 	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id){
-		require(period >= 1 days, 'Period must be greater than 1 day');
-		require(amountIn >= 100, 'AmountIn must be greater than 99'); // H-02
-		require(amountOutMin > 0, 'AmountOutMin must be greater 0'); // L-02
+		require(period >= 1 days, 'Period must be > 1 day');
+		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
+		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
 
 		cancelTask(id);
 		ordersById[id].amountIn = amountIn;
@@ -247,7 +247,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution (in case the order should be directly executed)
 	 */
 	function restartOrder(uint256 id, paraswapArgs memory dcaArgs) public onlyUser(id) {
-		require(ordersById[id].stopped == true, 'Order is not stopped.');
+		require(ordersById[id].stopped == true, 'Order is not stopped');
 
 		ordersById[id].stopped = false;
 		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) {
@@ -314,7 +314,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	 * @param id the order id
 	 */
 	function cancelTask(uint256 id) private {
-        require(ordersById[id].taskId != bytes32(""), "Task not started.");
+        require(ordersById[id].taskId != bytes32(""), 'Task not started');
 		bytes32 taskId = ordersById[id].taskId;
 		ordersById[id].taskId = bytes32("");
 
@@ -394,7 +394,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	 */
 	function withdrawFees() public onlyOwner {
         uint256 balance = address(this).balance;
-        require(balance > 0, "No FTM to withdraw");
+        require(balance > 0, 'No FTM to withdraw');
 
 		payable(address(tresory)).transfer(balance);
 
@@ -411,7 +411,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 	
 	modifier onlyUser(uint256 id) { // G-04
 		require(id < getOrdersCountTotal(), 'Order does not exist');
-		require(ordersById[id].user == msg.sender, 'Order does not belong to user');
+		require(ordersById[id].user == msg.sender, 'Not authorized');
 		_;
 	}
 
@@ -431,7 +431,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 // L-05 not fixed
 // L-06 fixed -> need to test
 
-// G-01 not fixed -> need to check revert string (< 32 bytes)
+// G-01 fixed
 // G-02 not fixed -> need to understand
 // G-03 fixed -> need to test
 // G-04 fixed -> maybe some more modifiers ?
