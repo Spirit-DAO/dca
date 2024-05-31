@@ -273,12 +273,10 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit OrderCreated(msg.sender, getOrdersCountTotal() - 1, tokenIn, tokenOut, amountIn, amountOutMin, period);
 	}
 
-	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
-		require(id < getOrdersCountTotal(), 'Order does not exist.');
-		require(ordersById[id].user == msg.sender, 'Order does not belong to user.');
-		require(period >= 1 days, 'Period must be greater than 1 day.');
-		require(amountIn > 0, 'AmountIn must be greater than 0.');
-		require(amountOutMin >= 0, 'AmountOutMin must be greater or equal 0.');
+	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id){
+		require(period >= 1 days, 'Period must be greater than 1 day');
+		require(amountIn >= 100, 'AmountIn must be greater than 99'); // H-02
+		require(amountOutMin > 0, 'AmountOutMin must be greater 0'); // L-02
 
 		cancelTask(id);
 		ordersById[id].amountIn = amountIn;
@@ -291,9 +289,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
 	}
 
-	function stopOrder(uint256 id) public {
-		require(id < getOrdersCountTotal(), 'Order does not exist.');
-		require(ordersById[id].user == msg.sender, 'Order does not belong to user.');
+	function stopOrder(uint256 id) public onlyUser(id){
 		require(ordersById[id].stopped == false, 'Order is already stopped.');
 
 		ordersById[id].stopped = true;
@@ -302,9 +298,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit OrderStopped(msg.sender, id);
 	}
 	
-	function restartOrder(uint256 id, paraswapArgs memory dcaArgs) public {
-		require(id < getOrdersCountTotal(), 'Order does not exist.');
-		require(ordersById[id].user == msg.sender, 'Order does not belong to user.');
+	function restartOrder(uint256 id, paraswapArgs memory dcaArgs) public onlyUser(id) {
 		require(ordersById[id].stopped == true, 'Order is not stopped.');
 
 		ordersById[id].stopped = false;
@@ -341,9 +335,15 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	
 	// Modifiers
 	modifier onlyOwnerOrDedicatedMsgSender() { // H-03
-		require(msg.sender == owner() || msg.sender == dedicatedMsgSender, 'Not authorized.');
+		require(msg.sender == owner() || msg.sender == dedicatedMsgSender, 'Not authorized');
 		_;
-	} 
+	}
+	
+	modifier onlyUser(uint256 id) {
+		require(id < getOrdersCountTotal(), 'Order does not exist');
+		require(ordersById[id].user == msg.sender, 'Order does not belong to user');
+		_;
+	}
 }
 // check G-01
 // fix G-02
