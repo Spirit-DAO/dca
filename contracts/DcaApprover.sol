@@ -28,9 +28,6 @@ interface ISilverDCA {
 }
 
 contract SilverDcaApprover is Ownable {
-	ERC20 public usdc;
-	ERC20 public tresory;
-
 	uint256 public id;
     address public dca;
     address public user;

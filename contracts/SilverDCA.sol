@@ -432,8 +432,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 // L-06 fixed -> need to test
 
 // G-01 fixed
-// G-02 not fixed -> need to understand
+// G-02 not fixed -> to do later
 // G-03 fixed -> need to test
 // G-04 fixed -> maybe some more modifiers ?
-// G-05 not fixed -> need to find where can I define the constant
+// G-05 fixed (?) -> didn't find where I can set as constant -> ask to Hashlock
 // G-06 not fixed -> need to understand
