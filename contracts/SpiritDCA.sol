@@ -46,6 +46,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 
 	// Event for Misc
 	event EditedTresory(address usdc);
+	event EditedScriptCID(string cid);
 	event WithdrawnFees(address tresory, uint256 amount);
 
 
@@ -112,7 +113,8 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit OrderExecuted(user, id, ordersById[id].tokenIn, ordersById[id].tokenOut, ordersById[id].amountIn - fees, ordersById[id].amountOutMin, ordersById[id].period);
 	}
 	
-	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public {
+	//Additionally, implement restrictions for ftmSwapArgs and dcaArgs
+	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender {
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
@@ -311,8 +313,14 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 
 	function editScriptCID(string memory _cid) public onlyOwner {
 		scriptCID = _cid;
+
+		emit EditedScriptCID(_cid);
 	}
 
+	modifier onlyOwnerOrDedicatedMsgSender() {
+		require(msg.sender == owner() || msg.sender == dedicatedMsgSender, 'Not authorized.');
+		_;
+	} 
 
 	function withdrawFees() public onlyOwner {
         uint256 balance = address(this).balance;
