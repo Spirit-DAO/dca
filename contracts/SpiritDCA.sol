@@ -246,6 +246,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
 		require(period >= 1 days, 'Period must be greater than 1 day.');
 		require(amountIn >= 100, 'AmountIn must be greater than 99.');
+		require(amountOutMin > 0, 'AmountOutMin must be greater 0.');
 		require(tokenIn != tokenOut, 'TokenOut must be different.');
 		require(tokenIn != address(0), 'Invalid tokenIn.');
 		require(tokenOut != address(0), 'Invalid tokenOut.');
