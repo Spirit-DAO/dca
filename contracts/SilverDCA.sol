@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.20; // L-04 (Fixed ?)
+pragma solidity 0.8.20; // L-04 (Fixed ?)
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";// L-05: Ownable2Step
+import "@openzeppelin/contracts/access/Ownable2Step.sol";// L-05
 import "@openzeppelin/contracts/utils/Strings.sol";
 import 'contracts/Libraries/TransferHelper.sol';
 
@@ -21,7 +21,7 @@ interface IProxyParaswap {
 /// @title SilverSwap DCA Contract
 /// @author github.com/SifexPro
 /// @notice This contract allows users to create DCA orders on the SilverSwap platform
-contract SilverSwapDCA is AutomateTaskCreator, Ownable {
+contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	// Utils variables
 	IProxyParaswap public proxy;
 	IERC20 public tresory;
@@ -436,8 +436,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 // L-01 fixed
 // L-02 fixed
 // L-03 fixed -> need to test
-// L-04 not fixed -> need to understand
-// L-05 not fixed
+// L-04 fixed (?)
+// L-05 fixed
 // L-06 fixed -> need to test
 
 // G-01 fixed
