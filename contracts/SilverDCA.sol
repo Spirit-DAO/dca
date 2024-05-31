@@ -420,8 +420,20 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable {
 
 	receive() external payable {}
 }
-// check G-01
-// fix G-02
-// fix G-05
-// fix G-06
-// Reband all Spirit to Silver
+// H-01 fixed
+// H-02 fixed
+// H-03 fixed
+
+// L-01 fixed
+// L-02 fixed
+// L-03 fixed -> need to test
+// L-04 not fixed -> need to understand
+// L-05 not fixed
+// L-06 fixed -> need to test
+
+// G-01 not fixed -> need to check revert string (< 32 bytes)
+// G-02 not fixed -> need to understand
+// G-03 fixed -> need to test
+// G-04 fixed -> maybe some more modifiers ?
+// G-05 not fixed -> need to find where can I define the constant
+// G-06 not fixed -> need to understand
