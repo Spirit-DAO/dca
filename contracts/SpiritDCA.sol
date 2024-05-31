@@ -10,7 +10,7 @@ import {Utils} from "contracts/Libraries/Utils.sol";
 import 'contracts/DcaApprover.sol';
 
 import 'contracts/Integrations/Gelato/AutomateTaskCreator.sol';
-import {IOpsProxy} from "contracts/Interfaces/IOpsProxy.sol";
+import {IOpsProxy} from "contracts/Interfaces/IOpsProxy.sol";//useless ?
 
 interface IProxyParaswap {
 	function simpleSwap(Utils.SimpleData memory data) external payable returns (uint256);
@@ -18,20 +18,27 @@ interface IProxyParaswap {
 	function megaSwap(Utils.MegaSwapSellData memory data) external payable returns (uint256);
 }
 
+/// @title SilverSwap DCA Contract
+/// @author github.com/SifexPro
+/// @notice This contract allows users to create DCA orders on the SilverSwap platform
 contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
+	// Utils variables
 	IProxyParaswap public proxy;
 	IERC20 public tresory;
 	
+	// Order variables
 	uint256 public ordersCount;
 	mapping(uint256 => Order) public ordersById;
 	mapping(address => uint256[]) public idByAddress;
 
+	// ParaSwap structs
 	struct paraswapArgs {
 		Utils.SimpleData simpleData;
 		Utils.SellData sellData;
 		Utils.MegaSwapSellData megaSwapSellData;
 	}
 
+	// Script CID for Gelato
 	string private scriptCID = "QmPWpjsLcCQ19zgYquUWh2CUojQAcLuvFyC74bisihUveZ";
 
 	// Event for Orders
@@ -51,24 +58,16 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	event EditedScriptCID(string cid);
 	event WithdrawnFees(address tresory, uint256 amount);
 
-
 	constructor(address _proxy, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
 		proxy = IProxyParaswap(payable(_proxy));
 		tresory = IERC20(_tresory);
 	}
 
-	function isSimpleDataEmpty(Utils.SimpleData memory _simpleData) pure private returns (bool) {
-		return _simpleData.fromToken == address(0) || _simpleData.toToken == address(0) || _simpleData.fromAmount == 0 || _simpleData.toAmount == 0 || _simpleData.beneficiary == address(0);
-	}
-
-	function isSellDataEmpty(Utils.SellData memory _sellData) pure private returns (bool) {
-		return _sellData.fromToken == address(0) || _sellData.fromAmount == 0 || _sellData.toAmount == 0 || _sellData.beneficiary == address(0) || _sellData.path.length == 0;
-	}
-
-	function isMegaSwapSellDataEmpty(Utils.MegaSwapSellData memory _megaSwapSellData) pure private returns (bool) {
-		return _megaSwapSellData.fromToken == address(0) || _megaSwapSellData.fromAmount == 0 || _megaSwapSellData.toAmount == 0 || _megaSwapSellData.beneficiary == address(0) || _megaSwapSellData.path.length == 0;
-	}
-
+	/**
+	 * @dev Execute the order (internal function)
+	 * @param id the order id
+	 * @param dcaArgs the dcaArgs struct for Paraswap execution
+	 */
 	function _executeOrder(uint id, paraswapArgs memory dcaArgs) private {
 		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
 		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
@@ -119,6 +118,13 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	}
 	
 	//Additionally, implement restrictions for ftmSwapArgs and dcaArgs
+	/**
+	 * @dev Execute the order (public function)
+	 * @param id the order id
+	 * @param amountTokenInGelatoFees the amount of token to pay (in tokenIn) for Gelato fees
+	 * @param dcaArgs the dcaArgs struct for Paraswap execution
+	 * @param ftmSwapArgs the ftmSwapArgs struct for Paraswap execution (for Gelato fees)
+	 */
 	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender { // H-03 (onlyOwnerOrDedicatedMsgSender)
 		require(id < getOrdersCountTotal(), 'Order does not exist.');
 		require(ordersById[id].stopped == false, 'Order is stopped.');
@@ -169,36 +175,96 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		}
 	}
 
-	function getOrdersCountTotal() public view returns (uint256) {
-		return ordersCount;
+	/**
+	 * @dev Create an order
+	 * @param tokenIn the token to swap
+	 * @param tokenOut the token to receive
+	 * @param amountIn the amount of tokenIn to swap
+	 * @param amountOutMin the minimum amount of tokenOut to receive
+	 * @param period the period between each swap
+	 * @param dcaArgs the dcaArgs struct for Paraswap execution
+	 */
+	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
+		require(period >= 1 days, 'Period must be greater than 1 day.');
+		require(amountIn >= 100, 'AmountIn must be greater than 99.'); // H-02
+		require(amountOutMin > 0, 'AmountOutMin must be greater 0.'); // L-02
+		require(tokenIn != tokenOut, 'TokenOut must be different.');
+		require(tokenIn != address(0), 'Invalid tokenIn.');
+		require(tokenOut != address(0), 'Invalid tokenOut.');
+
+        address approver = address(new SpiritDcaApprover{salt: bytes32(ordersCount)}(ordersCount, msg.sender, tokenIn));
+		Order memory order = Order(msg.sender, tokenIn, tokenOut, amountIn, amountOutMin, period, 0, 0, 0, 0, block.timestamp, false, approver, 0);
+		ordersById[ordersCount] = order;
+		idByAddress[msg.sender].push(ordersCount);
+		ordersCount++;
+
+		_executeOrder(getOrdersCountTotal() - 1, dcaArgs);
+		createTask(getOrdersCountTotal() - 1);
+
+		emit OrderCreated(msg.sender, getOrdersCountTotal() - 1, tokenIn, tokenOut, amountIn, amountOutMin, period);
 	}
 
-    function getOrdersCountByAddress(address user) public view returns (uint256) {
-        return idByAddress[user].length;
-    }
+	/**
+	 * @dev Edit an order
+	 * @param id the order id
+	 * @param amountIn the amount of tokenIn to swap
+	 * @param amountOutMin the minimum amount of tokenOut to receive
+	 * @param period the period between each swap
+	 * @param dcaArgs the dcaArgs struct for Paraswap execution
+	 */
+	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id){
+		require(period >= 1 days, 'Period must be greater than 1 day');
+		require(amountIn >= 100, 'AmountIn must be greater than 99'); // H-02
+		require(amountOutMin > 0, 'AmountOutMin must be greater 0'); // L-02
 
-    function getOrdersByIndex(address user, uint256 index) public view returns (Order memory, uint256 id) {
-        return (ordersById[idByAddress[user][index]], idByAddress[user][index]);
-    }
+		cancelTask(id);
+		ordersById[id].amountIn = amountIn;
+		ordersById[id].amountOutMin = amountOutMin;
+		ordersById[id].period = period;
+		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
+			_executeOrder(id, dcaArgs);
+		createTask(id);
 
-    function getApproveBytecode(uint256 _id, address _user, address _tokenIn) public pure returns (bytes memory) {
-        bytes memory bytecode = type(SpiritDcaApprover).creationCode;
+		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
+	}
 
-        return abi.encodePacked(bytecode, abi.encode(_id, _user, _tokenIn));
-    }
+	/**
+	 * @dev Stop an order
+	 * @param id the order id
+	 */
+	function stopOrder(uint256 id) public onlyUser(id){
+		require(ordersById[id].stopped == false, 'Order is already stopped.');
 
-    function getApproveAddress(address _user, address _tokenIn) public view returns (address) {
-        uint _id = ordersCount;
-        bytes memory bytecode = getApproveBytecode(_id, _user, _tokenIn);
+		ordersById[id].stopped = true;
+		cancelTask(id);
 
-        bytes32 hash = keccak256(
-            abi.encodePacked(bytes1(0xff), address(this), _id, keccak256(bytecode))
-        );
-
-        // NOTE: cast last 20 bytes of hash to address
-        return address(uint160(uint(hash)));
-    }
+		emit OrderStopped(msg.sender, id);
+	}
 	
+	/**
+	 * @dev Restart an order
+	 * @param id the order id
+	 * @param dcaArgs the dcaArgs struct for Paraswap execution (in case the order should be directly executed)
+	 */
+	function restartOrder(uint256 id, paraswapArgs memory dcaArgs) public onlyUser(id) {
+		require(ordersById[id].stopped == true, 'Order is not stopped.');
+
+		ordersById[id].stopped = false;
+		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) {
+			_executeOrder(id, dcaArgs);
+		}
+		createTask(id);
+
+		emit OrderRestarted(msg.sender, id);
+	}
+
+
+	// Gelato functions
+
+	/**
+	 * @dev Create a task with Gelato
+	 * @param id the order id
+	 */
 	function createTask(uint256 id) private {
 		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
 
@@ -243,6 +309,10 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit GelatoTaskCreated(taskId);
 	}
 
+	/**
+	 * @dev Cancel a task with Gelato
+	 * @param id the order id
+	 */
 	function cancelTask(uint256 id) private {
         require(ordersById[id].taskId != bytes32(""), "Task not started.");
 		bytes32 taskId = ordersById[id].taskId;
@@ -253,75 +323,75 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit GelatoTaskCancelled(taskId);
     }
 
-	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
-		require(period >= 1 days, 'Period must be greater than 1 day.');
-		require(amountIn >= 100, 'AmountIn must be greater than 99.'); // H-02
-		require(amountOutMin > 0, 'AmountOutMin must be greater 0.'); // L-02
-		require(tokenIn != tokenOut, 'TokenOut must be different.');
-		require(tokenIn != address(0), 'Invalid tokenIn.');
-		require(tokenOut != address(0), 'Invalid tokenOut.');
 
-        address approver = address(new SpiritDcaApprover{salt: bytes32(ordersCount)}(ordersCount, msg.sender, tokenIn));
-		Order memory order = Order(msg.sender, tokenIn, tokenOut, amountIn, amountOutMin, period, 0, 0, 0, 0, block.timestamp, false, approver, 0);
-		ordersById[ordersCount] = order;
-		idByAddress[msg.sender].push(ordersCount);
-		ordersCount++;
+	// Utils functions
 
-		_executeOrder(getOrdersCountTotal() - 1, dcaArgs);
-		createTask(getOrdersCountTotal() - 1);
-
-		emit OrderCreated(msg.sender, getOrdersCountTotal() - 1, tokenIn, tokenOut, amountIn, amountOutMin, period);
+	function isSimpleDataEmpty(Utils.SimpleData memory _simpleData) pure private returns (bool) {
+		return _simpleData.fromToken == address(0) || _simpleData.toToken == address(0) || _simpleData.fromAmount == 0 || _simpleData.toAmount == 0 || _simpleData.beneficiary == address(0);
 	}
 
-	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id){
-		require(period >= 1 days, 'Period must be greater than 1 day');
-		require(amountIn >= 100, 'AmountIn must be greater than 99'); // H-02
-		require(amountOutMin > 0, 'AmountOutMin must be greater 0'); // L-02
-
-		cancelTask(id);
-		ordersById[id].amountIn = amountIn;
-		ordersById[id].amountOutMin = amountOutMin;
-		ordersById[id].period = period;
-		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
-			_executeOrder(id, dcaArgs);
-		createTask(id);
-
-		emit OrderEdited(msg.sender, id, ordersById[id].tokenIn, ordersById[id].tokenOut, amountIn, amountOutMin, period);
+	function isSellDataEmpty(Utils.SellData memory _sellData) pure private returns (bool) {
+		return _sellData.fromToken == address(0) || _sellData.fromAmount == 0 || _sellData.toAmount == 0 || _sellData.beneficiary == address(0) || _sellData.path.length == 0;
 	}
 
-	function stopOrder(uint256 id) public onlyUser(id){
-		require(ordersById[id].stopped == false, 'Order is already stopped.');
-
-		ordersById[id].stopped = true;
-		cancelTask(id);
-
-		emit OrderStopped(msg.sender, id);
-	}
-	
-	function restartOrder(uint256 id, paraswapArgs memory dcaArgs) public onlyUser(id) {
-		require(ordersById[id].stopped == true, 'Order is not stopped.');
-
-		ordersById[id].stopped = false;
-		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) {
-			_executeOrder(id, dcaArgs);
-		}
-		createTask(id);
-
-		emit OrderRestarted(msg.sender, id);
+	function isMegaSwapSellDataEmpty(Utils.MegaSwapSellData memory _megaSwapSellData) pure private returns (bool) {
+		return _megaSwapSellData.fromToken == address(0) || _megaSwapSellData.fromAmount == 0 || _megaSwapSellData.toAmount == 0 || _megaSwapSellData.beneficiary == address(0) || _megaSwapSellData.path.length == 0;
 	}
 
+	function getOrdersCountTotal() public view returns (uint256) {
+		return ordersCount;
+	}
+
+    function getOrdersCountByAddress(address user) public view returns (uint256) {
+        return idByAddress[user].length;
+    }
+
+	function getOrdersByIndex(address user, uint256 index) public view returns (Order memory, uint256 id) {
+        return (ordersById[idByAddress[user][index]], idByAddress[user][index]);
+    }
+
+    function getApproveBytecode(uint256 _id, address _user, address _tokenIn) public pure returns (bytes memory) {
+        bytes memory bytecode = type(SpiritDcaApprover).creationCode;
+
+        return abi.encodePacked(bytecode, abi.encode(_id, _user, _tokenIn));
+    }
+
+    function getApproveAddress(address _user, address _tokenIn) public view returns (address) {
+        uint _id = ordersCount;
+        bytes memory bytecode = getApproveBytecode(_id, _user, _tokenIn);
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(bytes1(0xff), address(this), _id, keccak256(bytecode))
+        );
+
+        // NOTE: cast last 20 bytes of hash to address
+        return address(uint160(uint(hash)));
+    }
+
+
+	// Internal functions 
+
+	/**
+	 * @dev Edit the tresory address
+	 */
 	function editTresory(address _tresory) public onlyOwner {
 		tresory = IERC20(_tresory);
 
 		emit EditedTresory(_tresory);
 	}
 
+	/**
+	 * @dev Edit the script CID
+	 */
 	function editScriptCID(string memory _cid) public onlyOwner {
 		scriptCID = _cid;
 
 		emit EditedScriptCID(_cid);
 	}
 
+	/**
+	 * @dev Withdraw fees (FTM) from the contract
+	 */
 	function withdrawFees() public onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No FTM to withdraw");
@@ -331,23 +401,27 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit WithdrawnFees(address(tresory), balance);
     }
 
-	receive() external payable {}
-	
-	// Modifiers
+
+	// Modifiers 
+
 	modifier onlyOwnerOrDedicatedMsgSender() { // H-03
 		require(msg.sender == owner() || msg.sender == dedicatedMsgSender, 'Not authorized');
 		_;
 	}
 	
-	modifier onlyUser(uint256 id) {
+	modifier onlyUser(uint256 id) { // G-04
 		require(id < getOrdersCountTotal(), 'Order does not exist');
 		require(ordersById[id].user == msg.sender, 'Order does not belong to user');
 		_;
 	}
+
+
+	// Receive function (to receive FTM)
+
+	receive() external payable {}
 }
 // check G-01
 // fix G-02
 // fix G-05
 // fix G-06
-// Comment the code
-// Sort the code
+// Reband all Spirit to Silver
