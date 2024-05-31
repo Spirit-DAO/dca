@@ -70,23 +70,26 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 	}
 
 	function _executeOrder(uint id, paraswapArgs memory dcaArgs) private {
-		require(!isSimpleDataEmpty(dcaArgs.simpleData) || !isSellDataEmpty(dcaArgs.sellData) || !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData), "Invalid paraswapArgs.");
+		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
+		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
+		bool isMegaSwap = !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData);	// G-03
+		require(isSimpleSwap || isSellSwap || isMegaSwap, "Invalid dcaArgs");
 
 		address user = ordersById[id].user;
 		IERC20 tokenIn = IERC20(ordersById[id].tokenIn);
 		IERC20 tokenOut = IERC20(ordersById[id].tokenOut);
 		uint256	fees = ordersById[id].amountIn / 100;
 
-		if (!isSimpleDataEmpty(dcaArgs.simpleData)) {
+		if (isSimpleSwap) {			// G-03
 			dcaArgs.simpleData.beneficiary = payable(address(user));
 			dcaArgs.simpleData.toToken = ordersById[id].tokenOut;
 			dcaArgs.simpleData.fromToken = ordersById[id].tokenIn;
 			dcaArgs.simpleData.fromAmount = ordersById[id].amountIn - fees;
-		} else if (!isSellDataEmpty(dcaArgs.sellData)) {
+		} else if (isSellSwap) {	// G-03
 			dcaArgs.sellData.beneficiary = payable(address(user));
 			dcaArgs.sellData.fromToken = ordersById[id].tokenIn;
 			dcaArgs.sellData.fromAmount = ordersById[id].amountIn - fees;
-		} else if (!isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData)) {
+		} else if (isMegaSwap) {	// G-03
 			dcaArgs.megaSwapSellData.beneficiary = payable(address(user));
 			dcaArgs.megaSwapSellData.fromToken = ordersById[id].tokenIn;
 			dcaArgs.megaSwapSellData.fromAmount = ordersById[id].amountIn - fees;
@@ -101,13 +104,12 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		require(tokenIn.transfer(address(tresory), fees), "Failed to transfer fees."); // L-03 
 		TransferHelper.safeApprove(address(tokenIn), address(proxy), ordersById[id].amountIn - fees); // L-06
 		//tokenIn.approve(address(proxy), ordersById[id].amountIn - fees);
-		if (!isSimpleDataEmpty(dcaArgs.simpleData)) {
+		if (isSimpleSwap)		// G-03
 			proxy.simpleSwap(dcaArgs.simpleData);
-		} else if (!isSellDataEmpty(dcaArgs.sellData)) {
+		else if (isSellSwap)	// G-03
 			proxy.multiSwap(dcaArgs.sellData);
-		} else if (!isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData)) {
+		else if (isMegaSwap)	// G-03
 			proxy.megaSwap(dcaArgs.megaSwapSellData);
-		}
 		
 		uint256 balanceAfter = tokenOut.balanceOf(user);
 		require(balanceAfter - balanceBefore >= ordersById[id].amountOutMin, 'Too little received.');
@@ -123,7 +125,10 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed.');
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance.');
 		uint256 initialAmountIn = ordersById[id].amountIn;
-		bool isFtmSwap = !isSimpleDataEmpty(ftmSwapArgs.simpleData) || !isSellDataEmpty(ftmSwapArgs.sellData) || !isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData);
+		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
+		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
+		bool isMegaSwap = !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData);	// G-03
+		bool isFtmSwap = isSimpleSwap || isSellSwap || isMegaSwap;
 
 		if (isFtmSwap)
 		{
@@ -132,11 +137,11 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 			require(amountTokenInGelatoFees < ordersById[id].amountIn, 'amountTokenInGelatoFees too high.');
 			ordersById[id].amountIn -= amountTokenInGelatoFees;
 
-			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData))
+			if (isSimpleSwap)		// G-03
 				gelatoFees = ftmSwapArgs.simpleData.fromAmount;
-			else if (!isSellDataEmpty(ftmSwapArgs.sellData))
+			else if (isSellSwap)	// G-03
 				gelatoFees = ftmSwapArgs.sellData.fromAmount;
-			else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData))
+			else if (isMegaSwap)	// G-03
 				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
 
 			SpiritDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
@@ -144,11 +149,11 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
 			
 
-			if (!isSimpleDataEmpty(ftmSwapArgs.simpleData))
+			if (isSimpleSwap)		// G-03
 				proxy.simpleSwap(ftmSwapArgs.simpleData);
-			else if (!isSellDataEmpty(ftmSwapArgs.sellData))
+			else if (isSellSwap)	// G-03
 				proxy.multiSwap(ftmSwapArgs.sellData);
-			else if (!isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData))
+			else if (isMegaSwap)	// G-03
 				proxy.megaSwap(ftmSwapArgs.megaSwapSellData);
 		}
 
@@ -323,11 +328,6 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 		emit EditedScriptCID(_cid);
 	}
 
-	modifier onlyOwnerOrDedicatedMsgSender() { // H-03
-		require(msg.sender == owner() || msg.sender == dedicatedMsgSender, 'Not authorized.');
-		_;
-	} 
-
 	function withdrawFees() public onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No FTM to withdraw");
@@ -338,4 +338,10 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
     }
 
 	receive() external payable {}
+	
+	// Modifiers
+	modifier onlyOwnerOrDedicatedMsgSender() { // H-03
+		require(msg.sender == owner() || msg.sender == dedicatedMsgSender, 'Not authorized.');
+		_;
+	} 
 }
