@@ -198,7 +198,7 @@ contract SpiritSwapDCA is AutomateTaskCreator, Ownable {
 			Strings.toHexString((uint256(uint160(ordersById[id].tokenOut))), 20),			//destToken
 			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()),						//srcDecimals
 			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()),					//destDecimals
-			Strings.toString((ordersById[id].amountIn / 100) * 99),							//amount
+			Strings.toString((ordersById[id].amountIn * 99) / 100),							//amount
 			"250",																			//network
 			"spiritswap",																	//partner
 			"false",																		//otherExchangePrices
