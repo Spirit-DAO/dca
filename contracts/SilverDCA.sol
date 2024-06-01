@@ -128,7 +128,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		emit OrderExecuted(user, id, address(tokenIn), address(tokenOut), amountIn, amountOut, amountOutMin, period);
 	}
 	
-	//Additionally, implement restrictions for ftmSwapArgs and dcaArgs
 	/**
 	 * @dev Execute the order (public function)
 	 * @param id the order id
@@ -453,16 +452,16 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 // L-01 fixed
 // L-02 fixed
-// L-03 fixed -> need to test
+// L-03 fixed -> need to test -> looks good
 // L-04 fixed (?) -> need to be sure = ask
 // L-05 fixed
 // L-06 fixed -> need to test
 
 // G-01 fixed
 // G-02 fixed -> maybe more ?
-// G-03 fixed -> need to test
+// G-03 fixed -> need to test -> looks good (waiting for executeOrder)
 // G-04 fixed -> maybe some more modifiers ?
 // G-05 fixed (?) -> didn't find where I can set as constant -> ask to Hashlock
 // G-06 fixed
 
-// Apply some to DcaApprover.sol
+// Check auto exec (should have more FTM)

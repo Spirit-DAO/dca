@@ -41,23 +41,36 @@ contract SilverDcaApprover is Ownable {
         tokenIn = _tokenIn;
 	}
 
-    function executeOrder() public {
-        require(msg.sender == dca, 'Only DCA can execute order.');
+	/**
+	 * @dev Transfer the tokenIn to the DCA contract (for the order execution)
+	 */
+    function executeOrder() public onlyDCA {
         Order memory order = ISilverDCA(dca).ordersById(id);
 
 		require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
-        require(!order.stopped, 'Order is stopped.');
+        require(!order.stopped, 'Order is stopped');
 
         TransferHelper.safeTransferFrom(tokenIn, user, dca, order.amountIn);
     }
 
-	function transferGelatoFees(uint256 feesAmount) public {
-        require(msg.sender == dca, 'Only DCA can execute order.');
+	/**
+	 * @dev Transfer the tokenIn to the DCA contract (for gelato's fees)
+	 * @param feesAmount The amount of fees to transfer (in tokenIn)
+	 */
+	function transferGelatoFees(uint256 feesAmount) public onlyDCA {
         Order memory order = ISilverDCA(dca).ordersById(id);
 
 		require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
-        require(!order.stopped, 'Order is stopped.');
+        require(!order.stopped, 'Order is stopped');
 
         TransferHelper.safeTransferFrom(tokenIn, user, dca, feesAmount);
     }
+
+
+	// Modifiers 
+
+	modifier onlyDCA() { // G-04
+		require(msg.sender == dca, 'Not authorized');
+		_;
+	}
 }
