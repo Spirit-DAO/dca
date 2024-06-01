@@ -1,20 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Types.sol";
+import {
+    Initializable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
- * @dev Inherit this contract to allow your smart contract to
+ * @dev Inherit this contract to allow your upgradeable smart contract to
  * - Make synchronous fee payments.
  * - Have call restrictions for functions to be automated.
  */
+//solhint-disable func-name-mixedcase
 // solhint-disable private-vars-leading-underscore
-abstract contract AutomateReady {
+abstract contract AutomateReadyUpgradeable is Initializable {
     IAutomate public immutable automate;
-    address public immutable dedicatedMsgSender;
-    address private immutable feeCollector;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal feeCollector;
+    address public dedicatedMsgSender;
 
     /**
      * @dev
@@ -26,17 +30,23 @@ abstract contract AutomateReady {
         _;
     }
 
+    constructor(address _automate) {
+        automate = IAutomate(_automate);
+    }
+
     /**
      * @dev
      * _taskCreator is the address which will create tasks for this contract.
      */
-    constructor(address _automate, address _taskCreator) {
-        automate = IAutomate(_automate);
-        IGelato gelato = IGelato(IAutomate(_automate).gelato());
+    function __AutomateReady_init(address _taskCreator)
+        internal
+        onlyInitializing
+    {
+        IGelato gelato = IGelato(automate.gelato());
 
         feeCollector = gelato.feeCollector();
 
-        address proxyModuleAddress = IAutomate(_automate).taskModuleAddresses(
+        address proxyModuleAddress = IAutomate(automate).taskModuleAddresses(
             Module.PROXY
         );
 

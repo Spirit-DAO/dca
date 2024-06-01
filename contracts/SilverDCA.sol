@@ -118,8 +118,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			proxy.megaSwap(dcaArgs.megaSwapSellData);
 		
 		uint256 balanceAfter = tokenOut.balanceOf(user);
-		uint256 amountOutMin = ordersById[id].amountOutMin;
-		uint amountOut = balanceAfter - balanceBefore;
+		uint256 amountOutMin = ordersById[id].amountOutMin; // G-06
+		uint amountOut = balanceAfter - balanceBefore;	// G-06
 
 		require(amountOut >= amountOutMin, 'Too little received');
 		ordersById[id].totalAmountOut += amountOut;
