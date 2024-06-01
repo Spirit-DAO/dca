@@ -10,7 +10,6 @@ import {Utils} from "contracts/Libraries/Utils.sol";
 import 'contracts/DcaApprover.sol';
 
 import 'contracts/Integrations/Gelato/AutomateTaskCreator.sol';
-import {IOpsProxy} from "contracts/Interfaces/IOpsProxy.sol";//useless ?
 
 interface IProxyParaswap {
 	function simpleSwap(Utils.SimpleData memory data) external payable returns (uint256);
