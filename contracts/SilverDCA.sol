@@ -292,7 +292,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		bytes memory execData = abi.encode( // H-01 (amount)
 			Strings.toHexString(uint256(uint160(address(this))), 20),						//dca
 			id,																				//id
-			Strings.toHexString((uint256(uint160(ordersById[id].user))), 20),				//userAddress						
+			Strings.toHexString((uint256(uint160(ordersById[id].user))), 20),				//userAddress
 			Strings.toHexString((uint256(uint160(ordersById[id].tokenIn))), 20),			//srcToken
 			Strings.toHexString((uint256(uint160(ordersById[id].tokenOut))), 20),			//destToken
 			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()),						//srcDecimals
