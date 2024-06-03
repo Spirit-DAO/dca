@@ -461,7 +461,5 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 // G-02 fixed -> maybe more ?
 // G-03 fixed
 // G-04 fixed -> maybe some more modifiers ?
-// G-05 fixed (?) -> didn't find where I can set as constant -> ask to Hashlock
+// G-05 fixed (don't need)
 // G-06 fixed
-
-// Check auto exec (should have more FTM)
