@@ -452,7 +452,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 // L-01 fixed
 // L-02 fixed
-// L-03 fixed -> need to test -> looks good
+// L-03 fixed
 // L-04 fixed
 // L-05 fixed
 // L-06 fixed -> need to test
