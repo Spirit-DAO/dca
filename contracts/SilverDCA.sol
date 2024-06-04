@@ -445,7 +445,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 	modifier onlyValidEntries(uint256 period, uint256 amountIn, uint256 amountOutMin) { //G-04
 		// No G-02, because seems better to have a revert message for users
-		require(period >= 1 days, 'Period must be > 1 day');
+		//require(period >= 1 days, 'Period must be > 1 day');
 		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
 		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
 		_;
