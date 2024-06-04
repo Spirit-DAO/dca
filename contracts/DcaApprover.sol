@@ -28,10 +28,16 @@ interface ISilverDCA {
 }
 
 contract SilverDcaApprover is Ownable {
+	// Order's storage
 	uint256 public id;
     address public dca;
     address public user;
     address public tokenIn;
+
+	// Error events
+	error ErrorOrderStopped(uint256 id);
+	error ErrorPeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
+
 
     //	Here hardcode some values to avoid any manipulation of the contract
 	constructor(uint256 _id, address _user, address _tokenIn) Ownable(msg.sender) {
@@ -44,11 +50,8 @@ contract SilverDcaApprover is Ownable {
 	/**
 	 * @dev Transfer the tokenIn to the DCA contract (for the order execution)
 	 */
-    function executeOrder() public onlyDCA {
+    function executeOrder() public onlyDCA onlyValidOrder {
         Order memory order = ISilverDCA(dca).ordersById(id);
-
-		require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
-        require(!order.stopped, 'Order is stopped');
 
         TransferHelper.safeTransferFrom(tokenIn, user, dca, order.amountIn);
     }
@@ -57,12 +60,7 @@ contract SilverDcaApprover is Ownable {
 	 * @dev Transfer the tokenIn to the DCA contract (for gelato's fees)
 	 * @param feesAmount The amount of fees to transfer (in tokenIn)
 	 */
-	function transferGelatoFees(uint256 feesAmount) public onlyDCA {
-        Order memory order = ISilverDCA(dca).ordersById(id);
-
-		require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
-        require(!order.stopped, 'Order is stopped');
-
+	function transferGelatoFees(uint256 feesAmount) public onlyDCA onlyValidOrder {
         TransferHelper.safeTransferFrom(tokenIn, user, dca, feesAmount);
     }
 
@@ -71,6 +69,18 @@ contract SilverDcaApprover is Ownable {
 
 	modifier onlyDCA() { // G-04
 		require(msg.sender == dca, 'Not authorized');
+		_;
+	}
+
+	modifier onlyValidOrder() {
+		Order memory order = ISilverDCA(dca).ordersById(id);
+
+        //require(!order.stopped, 'Order is stopped');
+		if (order.stopped)
+			revert ErrorOrderStopped(id);
+		//require(block.timestamp - order.lastExecution >= order.period, 'Period not elapsed.');
+		if (block.timestamp - order.lastExecution < order.period) 
+			revert ErrorPeriodNotElapsed(id, order.lastExecution, block.timestamp, order.lastExecution + order.period);
 		_;
 	}
 }
