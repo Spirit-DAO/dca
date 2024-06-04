@@ -65,6 +65,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	error ErrorPeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
 	error ErrorTaskAlreadyCreated(uint256 id);
 	error ErrorTaskNotCreated(uint256 id);
+	error ErrorInvalidToken(address token);
 
 	constructor(address _proxy, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
 		proxy = IProxyParaswap(payable(_proxy));
@@ -204,13 +205,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param period the period between each swap
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
-	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public {
-		require(period >= 1 days, 'Period must be > 1 day');
-		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
-		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
+	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyValidEntries(period, amountIn, amountOutMin) onlyValidToken(tokenIn) onlyValidToken(tokenOut){
 		require(tokenIn != tokenOut, 'TokenOut must be different');
-		require(tokenIn != address(0), 'Invalid tokenIn');
-		require(tokenOut != address(0), 'Invalid tokenOut');
 
         address approver = address(new SilverDcaApprover{salt: bytes32(ordersCount)}(ordersCount, msg.sender, tokenIn));
 		Order memory order = Order(msg.sender, tokenIn, tokenOut, amountIn, amountOutMin, period, 0, 0, 0, 0, block.timestamp, false, approver, 0);
@@ -232,11 +228,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param period the period between each swap
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
-	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id){
-		require(period >= 1 days, 'Period must be > 1 day');
-		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
-		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
-
+	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id) onlyValidEntries(period, amountIn, amountOutMin) {
 		cancelTask(id);
 		ordersById[id].amountIn = amountIn;
 		ordersById[id].amountOutMin = amountOutMin;
@@ -447,6 +439,20 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		//require(ordersById[id].user == msg.sender, 'Not authorized');
 		if (ordersById[id].user != msg.sender) // G-02
 			revert ErrorNotAuthorized(id, ordersById[id].user, msg.sender);
+		_;
+	}
+
+	modifier onlyValidEntries(uint256 period, uint256 amountIn, uint256 amountOutMin) { //G-04
+		// No G-02, because seems better to have a revert message for users
+		require(period >= 1 days, 'Period must be > 1 day');
+		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
+		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
+		_;
+	}
+
+	modifier onlyValidToken(address token) { // G-04
+		if (token == address(0)) // G-02
+			revert ErrorInvalidToken(token);
 		_;
 	}
 
