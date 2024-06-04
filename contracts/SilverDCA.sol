@@ -61,6 +61,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	error ErrorOrderDoesNotExist(uint256 id, uint256 ordersCount);
 	error ErrorNotAuthorized(uint id, address user, address msgSender);
 	error ErrorOrderStopped(uint256 id);
+	error ErrorOrderNotStopped(uint256 id);
 	error PeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
 
 	constructor(address _proxy, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
@@ -268,7 +269,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution (in case the order should be directly executed)
 	 */
 	function restartOrder(uint256 id, paraswapArgs memory dcaArgs) public onlyUser(id) {
-		require(ordersById[id].stopped == true, 'Order is not stopped');
+		//require(ordersById[id].stopped == true, 'Order is not stopped');
+		if (!ordersById[id].stopped) // G-02
+			revert ErrorOrderNotStopped(id);
 
 		ordersById[id].stopped = false;
 		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) {
@@ -433,7 +436,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	
 	modifier onlyUser(uint256 id) { // G-04
 		//require(id < getOrdersCountTotal(), 'Order does not exist');
-		if (id < getOrdersCountTotal()) // G-02
+		if (id >= getOrdersCountTotal()) // G-02
 			revert ErrorOrderDoesNotExist(id, getOrdersCountTotal());
 		//require(ordersById[id].user == msg.sender, 'Not authorized');
 		if (ordersById[id].user != msg.sender) // G-02
