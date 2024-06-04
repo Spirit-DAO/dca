@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20; // L-04 (Fixed ?)
+pragma solidity >=0.8.20 <0.8.30; // L-04
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";// L-05
@@ -168,7 +168,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
 
 			SilverDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
-			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), ordersById[id].amountIn); // L-06
+			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), gelatoFees); // L-06
 			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
 			
 
