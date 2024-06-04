@@ -64,6 +64,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	error ErrorOrderStopped(uint256 id);
 	error ErrorOrderNotStopped(uint256 id);
 	error ErrorPeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
+	error ErrorInvalidParaswapArgs();
 	error ErrorTaskAlreadyCreated(uint256 id);
 	error ErrorTaskNotCreated(uint256 id);
 
@@ -81,7 +82,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
 		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
 		bool isMegaSwap = !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData);	// G-03
-		require(isSimpleSwap || isSellSwap || isMegaSwap, 'Invalid dcaArgs');
+		//require(isSimpleSwap || isSellSwap || isMegaSwap, 'Invalid dcaArgs');
+		if (!isSimpleSwap && !isSellSwap && !isMegaSwap) // G-02
+			revert ErrorInvalidParaswapArgs();
 
 		address user = ordersById[id].user;
 		IERC20 tokenIn = IERC20(ordersById[id].tokenIn);
