@@ -62,7 +62,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	error ErrorNotAuthorized(uint id, address user, address msgSender);
 	error ErrorOrderStopped(uint256 id);
 	error ErrorOrderNotStopped(uint256 id);
-	error PeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
+	error ErrorPeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
+	error ErrorTaskAlreadyCreated(uint256 id);
+	error ErrorTaskNotCreated(uint256 id);
 
 	constructor(address _proxy, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
 		proxy = IProxyParaswap(payable(_proxy));
@@ -145,7 +147,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			revert ErrorOrderStopped(id);
 		//require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed');
 		if (block.timestamp - ordersById[id].lastExecution < ordersById[id].period) // G-02
-			revert PeriodNotElapsed(id, ordersById[id].lastExecution, block.timestamp, ordersById[id].lastExecution + ordersById[id].period);
+			revert ErrorPeriodNotElapsed(id, ordersById[id].lastExecution, block.timestamp, ordersById[id].lastExecution + ordersById[id].period);
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance');
 
 		uint256 initialAmountIn = ordersById[id].amountIn;
@@ -290,7 +292,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param id the order id
 	 */
 	function createTask(uint256 id) private {
-		require(ordersById[id].taskId == bytes32(""), 'Task already created.');
+		//require(ordersById[id].taskId == bytes32(""), 'Task already created.');
+		if (ordersById[id].taskId != bytes32("")) // G-02
+			revert ErrorTaskAlreadyCreated(id);
 
 		bytes memory execData = abi.encode( // H-01 (amount)
 			Strings.toHexString(uint256(uint160(address(this))), 20),						//dca
@@ -338,7 +342,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param id the order id
 	 */
 	function cancelTask(uint256 id) private {
-        require(ordersById[id].taskId != bytes32(""), 'Task not started');
+        //require(ordersById[id].taskId != bytes32(""), 'Task not started');
+		if (ordersById[id].taskId == bytes32("")) // G-02
+			revert ErrorTaskNotCreated(id);
 		bytes32 taskId = ordersById[id].taskId;
 		ordersById[id].taskId = bytes32("");
 
@@ -461,7 +467,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 // L-06 fixed
 
 // G-01 fixed
-// G-02 fixed -> maybe more ?
+// G-02 fixed
 // G-03 fixed
 // G-04 fixed -> maybe some more modifiers ?
 // G-05 fixed (don't need)
