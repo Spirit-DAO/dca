@@ -282,6 +282,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 	/**
 	 * @dev Create a task with Gelato
+	 * Cancel the previous task if it exists
 	 * @param id the order id
 	 */
 	function createTask(uint256 id) private {
