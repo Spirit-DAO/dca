@@ -230,7 +230,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
 	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id) onlyValidEntries(period, amountIn, amountOutMin) {
-		cancelTask(id);
 		ordersById[id].amountIn = amountIn;
 		ordersById[id].amountOutMin = amountOutMin;
 		ordersById[id].period = period;
@@ -286,9 +285,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param id the order id
 	 */
 	function createTask(uint256 id) private {
-		//require(ordersById[id].taskId == bytes32(""), 'Task already created.');
-		if (ordersById[id].taskId != bytes32("")) // G-02
-			revert ErrorTaskAlreadyCreated(id);
+		if (ordersById[id].taskId != bytes32(""))
+			cancelTask(id);
 
 		bytes memory execData = abi.encode( // H-01 (amount)
 			Strings.toHexString(uint256(uint160(address(this))), 20),						//dca
