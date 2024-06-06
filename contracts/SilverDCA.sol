@@ -230,13 +230,15 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
 	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, paraswapArgs memory dcaArgs) public onlyUser(id) onlyValidEntries(period, amountIn, amountOutMin) {
-		cancelTask(id);
+		if (ordersById[id].taskId != bytes32(""))
+			cancelTask(id);
 		ordersById[id].amountIn = amountIn;
 		ordersById[id].amountOutMin = amountOutMin;
 		ordersById[id].period = period;
-		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
+		if (!ordersById[id].stopped && block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
 			_executeOrder(id, dcaArgs);
-		createTask(id);
+		if (!ordersById[id].stopped)
+			createTask(id);
 
 		address tokenIn = ordersById[id].tokenIn; // G-06
 		address tokenOut = ordersById[id].tokenOut;	// G-06
