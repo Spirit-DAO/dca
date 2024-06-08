@@ -155,9 +155,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance');
 
 		uint256 initialAmountIn = ordersById[id].amountIn;
-		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
-		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
-		bool isMegaSwap = !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData);	// G-03
+		bool isSimpleSwap = !isSimpleDataEmpty(ftmSwapArgs.simpleData);				// G-03
+		bool isSellSwap = !isSellDataEmpty(ftmSwapArgs.sellData);					// G-03
+		bool isMegaSwap = !isMegaSwapSellDataEmpty(ftmSwapArgs.megaSwapSellData);	// G-03
 		bool isFtmSwap = isSimpleSwap || isSellSwap || isMegaSwap;
 
 		if (isFtmSwap)
