@@ -143,15 +143,15 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param ftmSwapArgs the ftmSwapArgs struct for Paraswap execution (for Gelato fees)
 	 */
 	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, paraswapArgs memory dcaArgs, paraswapArgs memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender { // H-03 (onlyOwnerOrDedicatedMsgSender)
-		require(id < getOrdersCountTotal(), 'Order does not exist');
-		//if (id >= getOrdersCountTotal()) // G-02
-		//	revert ErrorOrderDoesNotExist(id, getOrdersCountTotal());
-		require(ordersById[id].stopped == false, 'Order is stopped');
-		//if (ordersById[id].stopped) // G-02
-		//	revert ErrorOrderStopped(id);
-		require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed');
-		//if (block.timestamp - ordersById[id].lastExecution < ordersById[id].period) // G-02
-		//	revert ErrorPeriodNotElapsed(id, ordersById[id].lastExecution, block.timestamp, ordersById[id].lastExecution + ordersById[id].period);
+		//require(id < getOrdersCountTotal(), 'Order does not exist');
+		if (id >= getOrdersCountTotal()) // G-02
+			revert ErrorOrderDoesNotExist(id, getOrdersCountTotal());
+		//require(ordersById[id].stopped == false, 'Order is stopped');
+		if (ordersById[id].stopped) // G-02
+			revert ErrorOrderStopped(id);
+		//require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed');
+		if (block.timestamp - ordersById[id].lastExecution < ordersById[id].period) // G-02
+			revert ErrorPeriodNotElapsed(id, ordersById[id].lastExecution, block.timestamp, ordersById[id].lastExecution + ordersById[id].period);
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance');
 
 		uint256 initialAmountIn = ordersById[id].amountIn;
