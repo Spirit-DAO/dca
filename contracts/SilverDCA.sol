@@ -177,8 +177,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			SilverDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
 			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), gelatoFees); // L-06
 			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
-			
-
 			if (isSimpleSwap)		// G-03
 				proxy.simpleSwap(ftmSwapArgs.simpleData);
 			else if (isSellSwap)	// G-03
