@@ -64,7 +64,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	error ErrorOrderStopped(uint256 id);
 	error ErrorOrderNotStopped(uint256 id);
 	error ErrorPeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
-	error ErrorInvalidParaswapArgs();
+	error ErrorInvalidExactInputParams();
 	error ErrorTaskAlreadyCreated(uint256 id);
 	error ErrorTaskNotCreated(uint256 id);
 
@@ -79,12 +79,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
 	function _executeOrder(uint id, ExactInputParams memory dcaArgs) private {
-		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
-		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
-		bool isMegaSwap = !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData);	// G-03
-		//require(isSimpleSwap || isSellSwap || isMegaSwap, 'Invalid dcaArgs');
-		if (!isSimpleSwap && !isSellSwap && !isMegaSwap) // G-02
-			revert ErrorInvalidParaswapArgs();
+		if (!dcaArgs.path || !dcaArgs.amountIn || !dcaArgs.recipient) // G-02
+			revert ErrorInvalidExactInputParams();
 
 		address user = ordersById[id].user;
 		IERC20 tokenIn = IERC20(ordersById[id].tokenIn);
@@ -92,21 +88,11 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 		uint256	fees = ordersById[id].amountIn / 100;
 		uint256 amountIn = ordersById[id].amountIn - fees;
+		uint256 amountOutMin = ordersById[id].amountOutMin;
 
-		if (isSimpleSwap) {			// G-03
-			dcaArgs.simpleData.beneficiary = payable(address(user));
-			dcaArgs.simpleData.toToken = ordersById[id].tokenOut;
-			dcaArgs.simpleData.fromToken = ordersById[id].tokenIn;
-			dcaArgs.simpleData.fromAmount = amountIn;
-		} else if (isSellSwap) {	// G-03
-			dcaArgs.sellData.beneficiary = payable(address(user));
-			dcaArgs.sellData.fromToken = ordersById[id].tokenIn;
-			dcaArgs.sellData.fromAmount = amountIn;
-		} else if (isMegaSwap) {	// G-03
-			dcaArgs.megaSwapSellData.beneficiary = payable(address(user));
-			dcaArgs.megaSwapSellData.fromToken = ordersById[id].tokenIn;
-			dcaArgs.megaSwapSellData.fromAmount = amountIn;
-		}
+		dcaArgs.recipient = payable(address(user));
+		dcaArgs.amountIn = amountIn;
+		dcaArgs.amountOutMinimum = amountOutMin;
 
 		uint256 balanceBefore = tokenOut.balanceOf(user);
 		ordersById[id].totalExecutions += 1;
@@ -121,7 +107,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		swapRouter.exactInput(dcaArgs);
 		
 		uint256 balanceAfter = tokenOut.balanceOf(user);
-		uint256 amountOutMin = ordersById[id].amountOutMin; // G-06
 		uint amountOut = balanceAfter - balanceBefore;	// G-06
 
 		require(amountOut >= amountOutMin, 'Too little received');
@@ -468,3 +453,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 // G-04 fixed -> maybe some more modifiers ?
 // G-05 fixed (don't need)
 // G-06 fixed
+
+
+// Remove isEmpty functions
