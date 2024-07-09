@@ -318,18 +318,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 	// Utils functions
 
-	function isSimpleDataEmpty(Utils.SimpleData memory _simpleData) pure private returns (bool) {
-		return _simpleData.fromToken == address(0) || _simpleData.toToken == address(0) || _simpleData.fromAmount == 0 || _simpleData.toAmount == 0 || _simpleData.beneficiary == address(0);
-	}
-
-	function isSellDataEmpty(Utils.SellData memory _sellData) pure private returns (bool) {
-		return _sellData.fromToken == address(0) || _sellData.fromAmount == 0 || _sellData.toAmount == 0 || _sellData.beneficiary == address(0) || _sellData.path.length == 0;
-	}
-
-	function isMegaSwapSellDataEmpty(Utils.MegaSwapSellData memory _megaSwapSellData) pure private returns (bool) {
-		return _megaSwapSellData.fromToken == address(0) || _megaSwapSellData.fromAmount == 0 || _megaSwapSellData.toAmount == 0 || _megaSwapSellData.beneficiary == address(0) || _megaSwapSellData.path.length == 0;
-	}
-
 	function getOrdersCountTotal() public view returns (uint256) {
 		return ordersCount;
 	}
@@ -448,6 +436,3 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 // G-04 fixed -> maybe some more modifiers ?
 // G-05 fixed (don't need)
 // G-06 fixed
-
-
-// Remove isEmpty functions
