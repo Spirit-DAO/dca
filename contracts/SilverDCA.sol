@@ -11,16 +11,7 @@ import 'contracts/DcaApprover.sol';
 
 import 'contracts/Integrations/Gelato/AutomateTaskCreator.sol';
 
-interface IProxyParaswap {
-	function simpleSwap(Utils.SimpleData memory data) external payable returns (uint256);
-	function multiSwap(Utils.SellData memory data) external payable returns (uint256);
-	function megaSwap(Utils.MegaSwapSellData memory data) external payable returns (uint256);
-}
-
-interface IAlgebraSwapRouter {
-	function exactInput(ExactInputParams memory data) external payable returns (uint256);
-}
-
+// Algebra Swap Router struct
 struct ExactInputParams {
 	bytes path;
 	address recipient;
@@ -29,25 +20,22 @@ struct ExactInputParams {
 	uint256 amountOutMinimum;
 }
 
+interface IAlgebraSwapRouter {
+	function exactInput(ExactInputParams memory data) external payable returns (uint256);
+}
+
 /// @title SilverSwap DCA Contract
 /// @author github.com/SifexPro
 /// @notice This contract allows users to create DCA orders on the SilverSwap platform
 contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	// Utils variables
-	IProxyParaswap public proxy;
+	IAlgebraSwapRouter public swapRouter;
 	IERC20 public tresory;
 	
 	// Order variables
 	uint256 public ordersCount;
 	mapping(uint256 => Order) public ordersById;
 	mapping(address => uint256[]) public idByAddress;
-
-	// ParaSwap structs
-	struct paraswapArgs {
-		Utils.SimpleData simpleData;
-		Utils.SellData sellData;
-		Utils.MegaSwapSellData megaSwapSellData;
-	}
 
 	// Script CID for Gelato
 	string private scriptCID = "QmX8Px2byBx6jRTrMBY8CHdLnpC32TxqcXkHBHBbmcbLj8";
@@ -80,8 +68,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	error ErrorTaskAlreadyCreated(uint256 id);
 	error ErrorTaskNotCreated(uint256 id);
 
-	constructor(address _proxy, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
-		proxy = IProxyParaswap(payable(_proxy));
+	constructor(address _swapRouter, address _automate, address _tresory) AutomateTaskCreator(_automate) Ownable(msg.sender) {
+		swapRouter = IAlgebraSwapRouter(payable(_swapRouter));
 		tresory = IERC20(_tresory);
 	}
 
@@ -90,7 +78,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param id the order id
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
-	function _executeOrder(uint id, paraswapArgs memory dcaArgs) private {
+	function _executeOrder(uint id, ExactInputParams memory dcaArgs) private {
 		bool isSimpleSwap = !isSimpleDataEmpty(dcaArgs.simpleData);				// G-03
 		bool isSellSwap = !isSellDataEmpty(dcaArgs.sellData);					// G-03
 		bool isMegaSwap = !isMegaSwapSellDataEmpty(dcaArgs.megaSwapSellData);	// G-03
@@ -127,14 +115,10 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		ordersById[id].lastExecution = block.timestamp;
 		
 		require(tokenIn.transfer(address(tresory), fees), 'Failed to transfer fees'); // L-03 
-		TransferHelper.safeApprove(address(tokenIn), address(proxy), amountIn); // L-06
+		TransferHelper.safeApprove(address(tokenIn), address(swapRouter), amountIn); // L-06
 		//tokenIn.approve(address(proxy), amountIn);
-		if (isSimpleSwap)		// G-03
-			proxy.simpleSwap(dcaArgs.simpleData);
-		else if (isSellSwap)	// G-03
-			proxy.multiSwap(dcaArgs.sellData);
-		else if (isMegaSwap)	// G-03
-			proxy.megaSwap(dcaArgs.megaSwapSellData);
+		
+		swapRouter.exactInput(dcaArgs);
 		
 		uint256 balanceAfter = tokenOut.balanceOf(user);
 		uint256 amountOutMin = ordersById[id].amountOutMin; // G-06
@@ -187,14 +171,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 				gelatoFees = ftmSwapArgs.megaSwapSellData.fromAmount;
 
 			SilverDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
-			TransferHelper.safeApprove(ordersById[id].tokenIn, address(proxy), gelatoFees); // L-06
+			TransferHelper.safeApprove(ordersById[id].tokenIn, address(swapRouter), gelatoFees); // L-06
 			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
-			if (isSimpleSwap)		// G-03
-				proxy.simpleSwap(ftmSwapArgs.simpleData);
-			else if (isSellSwap)	// G-03
-				proxy.multiSwap(ftmSwapArgs.sellData);
-			else if (isMegaSwap)	// G-03
-				proxy.megaSwap(ftmSwapArgs.megaSwapSellData);
+			swapRouter.exactInput(ftmSwapArgs);
 		}
 
 		_executeOrder(id, dcaArgs);
