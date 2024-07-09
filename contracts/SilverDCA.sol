@@ -79,7 +79,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param dcaArgs the dcaArgs struct for Paraswap execution
 	 */
 	function _executeOrder(uint id, ExactInputParams memory dcaArgs) private {
-		if (dcaArgs.path == bytes("") || !dcaArgs.amountIn || !dcaArgs.recipient) // G-02
+		if (dcaArgs.path.length == 0 || dcaArgs.amountIn == 0 || dcaArgs.recipient == address(0)) // G-02
 			revert ErrorInvalidExactInputParams();
 
 		address user = ordersById[id].user;
@@ -137,9 +137,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 		uint256 initialAmountIn = ordersById[id].amountIn;
 		
-		if (ftmSwapArgs.path == bytes("") || !ftmSwapArgs.amountIn || !ftmSwapArgs.recipient) // G-02
+		if (ftmSwapArgs.path.length == 0 || ftmSwapArgs.amountIn == 0 || ftmSwapArgs.recipient == address(0)) // G-02
 			revert ErrorInvalidExactInputParams();
-		bool isFtmSwap = ftmSwapArgs.path != bytes("") && ftmSwapArgs.amountIn && ftmSwapArgs.recipient;
+		bool isFtmSwap = ftmSwapArgs.path.length != 0 && ftmSwapArgs.amountIn != 0 || ftmSwapArgs.recipient != address(0);
 
 		if (isFtmSwap)
 		{
