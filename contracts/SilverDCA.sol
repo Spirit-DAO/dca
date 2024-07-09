@@ -17,6 +17,18 @@ interface IProxyParaswap {
 	function megaSwap(Utils.MegaSwapSellData memory data) external payable returns (uint256);
 }
 
+interface IAlgebraSwapRouter {
+	function exactInput(ExactInputParams memory data) external payable returns (uint256);
+}
+
+struct ExactInputParams {
+	bytes path;
+	address recipient;
+	uint256 deadline;
+	uint256 amountIn;
+	uint256 amountOutMinimum;
+}
+
 /// @title SilverSwap DCA Contract
 /// @author github.com/SifexPro
 /// @notice This contract allows users to create DCA orders on the SilverSwap platform
