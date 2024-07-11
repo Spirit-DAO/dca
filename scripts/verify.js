@@ -13,7 +13,7 @@ async function main() {
 	await hre.run("verify:verify", {
 		address: deploysData.dca,
 		constructorArguments: [
-			deploysExtraData.proxy,
+			deploysExtraData.swapRouter,
 			deploysExtraData.gelato,
 			deploysExtraData.tresory
 		],
