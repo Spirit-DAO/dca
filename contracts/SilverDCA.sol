@@ -269,10 +269,10 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()),						//srcDecimals
 			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()),					//destDecimals
 			Strings.toString((ordersById[id].amountIn * 99) / 100),							//amount
-			"250",																			//network
-			"spiritswap",																	//partner -> need to be changed (silverswap)
-			"false",																		//otherExchangePrices
-			"15"																			//maxImpact
+			"250",																			//network--
+			"spiritswap",																	//partner -> need to be changed (silverswap)--
+			"false",																		//otherExchangePrices--
+			"15"																			//maxImpact--
 		);
 
 		ModuleData memory moduleData = ModuleData({
@@ -404,7 +404,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 	modifier onlyValidEntries(uint256 period, uint256 amountIn, uint256 amountOutMin) { //G-04
 		// No G-02, because seems better to have a revert message for users
-		require(period >= 1 days, 'Period must be > 1 day');
+		require(period >= 5 minutes, 'Period must be > 5 min');
 		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
 		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
 		_;
@@ -440,3 +440,4 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 // G-06 fixed
 
 // Change data to dca script
+// Fix withdraw fees
