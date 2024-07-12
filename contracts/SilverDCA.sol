@@ -269,10 +269,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			Strings.toString(ERC20(ordersById[id].tokenIn).decimals()),						//srcDecimals
 			Strings.toString(ERC20(ordersById[id].tokenOut).decimals()),					//destDecimals
 			Strings.toString((ordersById[id].amountIn * 99) / 100),							//amount
-			"250",																			//network--
-			"spiritswap",																	//partner -> need to be changed (silverswap)--
-			"false",																		//otherExchangePrices--
-			"15"																			//maxImpact--
+			"250"																			//network
 		);
 
 		ModuleData memory moduleData = ModuleData({
