@@ -96,7 +96,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 		uint256 balanceBefore = tokenOut.balanceOf(user);
 		ordersById[id].totalExecutions += 1;
-		ordersById[id].totalAmountIn += amountIn;
+		ordersById[id].totalAmountIn += ordersById[id].amountIn;
         SilverDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
 		
