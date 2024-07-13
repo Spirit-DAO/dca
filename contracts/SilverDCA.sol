@@ -113,7 +113,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		ordersById[id].totalAmountOut += amountOut;
 
 		uint256 period = ordersById[id].period; //G-06
-		emit OrderExecuted(user, id, address(tokenIn), address(tokenOut), amountIn, amountOut, amountOutMin, period);
+		emit OrderExecuted(user, id, address(tokenIn), address(tokenOut), amountIn + fees, amountOut, amountOutMin, period);
 	}
 	
 	/**
