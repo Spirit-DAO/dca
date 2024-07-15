@@ -287,7 +287,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			execData
 		);
 		moduleData.args[2] = _timeTriggerModuleArg(
-			uint128(ordersById[id].lastExecution), 
+			uint128(ordersById[id].lastExecution) * 1000, 
 			uint128(ordersById[id].period + 180) * 1000
 		);
 
