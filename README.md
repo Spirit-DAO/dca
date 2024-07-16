@@ -5,11 +5,11 @@ Our smart contract implements a Dollar Cost Averaging (DCA) strategy. This strat
 ### Functionality of the Main Functions
 
 1. **`createOrder` Function**
-   - **Arguments**: Takes the order values and the `paraswapArgs` structure as input.
+   - **Arguments**: Takes the order values and the `ExactInputParams` structure as input.
    - **Role**: Creates the user's order, executes the order for the first time, and sets up an automated task with Gelato for future executions.
 
 2. **`executeOrder` Function**
-   - **Arguments**: Takes the order ID, Gelato fees, and two `paraswapArgs` structures (one for the order swap and one for the equivalent of 0.1 FTM swap for Gelato fees).
+   - **Arguments**: Takes the order ID, Gelato fees, and two `ExactInputParams` structures (one for the order swap and one for the equivalent of 0.1 FTM swap for Gelato fees).
    - **Role**: Executes the order swap according to the ID (and pays Gelato fees).
 
 3. **`editOrder`, `stopOrder`, `restartOrder` Functions**
@@ -22,7 +22,7 @@ Our smart contract implements a Dollar Cost Averaging (DCA) strategy. This strat
   - **Functionality**: A TypeScript script, hosted on IPFS, retrieves the values from ParaSwap based on the parameters (tokenIn, tokenOut, amount, etc.). These values are then placed into the `paraswapArgs` structure, necessary for `executeOrder`.
   - **Self-Payment**: Gelato uses a selfpay mechanism, for which 0.1 FTM is swapped to pay Gelato's fees, managed within `executeOrder`.
 
-- **ParaSwap**
-  - **Role**: ParaSwap is used to perform the swaps. It supports different types of swaps (SimpleSwap, MultiSwap, MegaSwap), which is why functions leading to a swap use a `paraswapArgs` structure.
+- **Algebra**
+  - **Role**: Algebra Swap Router is used to perform the swaps, which is why functions leading to a swap use a `ExactInputParams` structure.
 
-In summary, our DCA smart contract allows for automated and regular investments through the integration of Gelato for task management and ParaSwap for swap execution. The main functions handle the creation, execution, and modification of orders, providing a simple and effective investment solution.
+In summary, our DCA smart contract allows for automated and regular investments through the integration of Gelato for task management and Algebra for swap execution. The main functions handle the creation, execution, and modification of orders, providing a simple and effective investment solution.
