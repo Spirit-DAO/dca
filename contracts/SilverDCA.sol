@@ -76,7 +76,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	/**
 	 * @dev Execute the order (internal function)
 	 * @param id the order id
-	 * @param dcaArgs the dcaArgs struct for Paraswap execution
+	 * @param dcaArgs the dcaArgs struct for Algebra swap
 	 */
 	function _executeOrder(uint id, ExactInputParams memory dcaArgs) private {
 		if (dcaArgs.path.length == 0 || dcaArgs.amountIn == 0 || dcaArgs.recipient == address(0)) // G-02
@@ -120,8 +120,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @dev Execute the order (public function)
 	 * @param id the order id
 	 * @param amountTokenInGelatoFees the amount of token to pay (in tokenIn) for Gelato fees
-	 * @param dcaArgs the dcaArgs struct for Paraswap execution
-	 * @param ftmSwapArgs the ftmSwapArgs struct for Paraswap execution (for Gelato fees)
+	 * @param dcaArgs the dcaArgs struct for Algebra swap
+	 * @param ftmSwapArgs the ftmSwapArgs struct for Algebra swap (for Gelato fees)
 	 */
 	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, ExactInputParams memory dcaArgs, ExactInputParams memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender { // H-03 (onlyOwnerOrDedicatedMsgSender)
 		//require(id < getOrdersCountTotal(), 'Order does not exist');
@@ -177,7 +177,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param amountIn the amount of tokenIn to swap
 	 * @param amountOutMin the minimum amount of tokenOut to receive
 	 * @param period the period between each swap
-	 * @param dcaArgs the dcaArgs struct for Paraswap execution
+	 * @param dcaArgs the dcaArgs struct for Algebra swap
 	 */
 	function createOrder(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period, ExactInputParams memory dcaArgs) public onlyValidEntries(period, amountIn, amountOutMin) onlyValidTokens(tokenIn, tokenOut){
         address approver = address(new SilverDcaApprover{salt: bytes32(ordersCount)}(ordersCount, msg.sender, tokenIn));
@@ -198,7 +198,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param amountIn the amount of tokenIn to swap
 	 * @param amountOutMin the minimum amount of tokenOut to receive
 	 * @param period the period between each swap
-	 * @param dcaArgs the dcaArgs struct for Paraswap execution
+	 * @param dcaArgs the dcaArgs struct for Algebra swap
 	 */
 	function editOrder(uint256 id, uint256 amountIn, uint256 amountOutMin, uint256 period, ExactInputParams memory dcaArgs) public onlyUser(id) onlyValidEntries(period, amountIn, amountOutMin) {
 		ordersById[id].amountIn = amountIn;
@@ -232,7 +232,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	/**
 	 * @dev Restart an order
 	 * @param id the order id
-	 * @param dcaArgs the dcaArgs struct for Paraswap execution (in case the order should be directly executed)
+	 * @param dcaArgs the dcaArgs struct for Algebra swap (in case the order should be directly executed)
 	 */
 	function restartOrder(uint256 id, ExactInputParams memory dcaArgs) public onlyUser(id) {
 		//require(ordersById[id].stopped == true, 'Order is not stopped');
