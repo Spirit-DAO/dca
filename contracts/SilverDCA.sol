@@ -435,6 +435,3 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 // G-04 fixed -> maybe some more modifiers ?
 // G-05 fixed (don't need)
 // G-06 fixed
-
-// Change data to dca script
-// Fix withdraw fees
