@@ -137,9 +137,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 		uint256 initialAmountIn = ordersById[id].amountIn;
 		
-		if (ftmSwapArgs.path.length == 0 || ftmSwapArgs.amountIn == 0 || ftmSwapArgs.recipient == address(0)) // G-02
-			revert ErrorInvalidExactInputParams();
-		bool isFtmSwap = ftmSwapArgs.path.length != 0 && ftmSwapArgs.amountIn != 0 || ftmSwapArgs.recipient != address(0);
+		bool isFtmSwap = ftmSwapArgs.path.length != 0 && ftmSwapArgs.amountIn != 0 && ftmSwapArgs.recipient != address(0);
 
 		if (isFtmSwap)
 		{
@@ -336,7 +334,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
     }
 
     function getApproveAddress(address _user, address _tokenIn) public view returns (address) {
-        uint _id = ordersCount;
+        uint258 _id = ordersCount;
         bytes memory bytecode = getApproveBytecode(_id, _user, _tokenIn);
 
         bytes32 hash = keccak256(
