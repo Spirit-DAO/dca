@@ -109,7 +109,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		uint256 balanceAfter = tokenOut.balanceOf(user);
 		uint amountOut = balanceAfter - balanceBefore;	// G-06
 
-		require(amountOut >= amountOutMin, 'Too little received');
+		//require(amountOut >= amountOutMin, 'Too little received'); // G-01
 		ordersById[id].totalAmountOut += amountOut;
 
 		uint256 period = ordersById[id].period; //G-06
