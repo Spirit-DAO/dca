@@ -79,7 +79,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param dcaArgs the dcaArgs struct for Algebra swap
 	 */
 	function _executeOrder(uint id, ExactInputParams memory dcaArgs) private {
-		if (dcaArgs.path.length == 0 || dcaArgs.amountIn == 0 || dcaArgs.recipient == address(0)) // G-02
+		if (dcaArgs.path.length == 0 || dcaArgs.amountIn == 0 || dcaArgs.recipient == address(0) || dcaArgs.deadline < block.timestamp) // G-02
 			revert ErrorInvalidExactInputParams();
 
 		address user = ordersById[id].user;
