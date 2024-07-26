@@ -334,7 +334,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
     }
 
     function getApproveAddress(address _user, address _tokenIn) public view returns (address) {
-        uint258 _id = ordersCount;
+        uint256 _id = ordersCount;
         bytes memory bytecode = getApproveBytecode(_id, _user, _tokenIn);
 
         bytes32 hash = keccak256(
