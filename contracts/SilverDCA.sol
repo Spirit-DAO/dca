@@ -102,14 +102,12 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		
 		require(tokenIn.transfer(address(tresory), fees), 'Failed to transfer fees'); // L-03 
 		TransferHelper.safeApprove(address(tokenIn), address(swapRouter), amountIn); // L-06
-		//tokenIn.approve(address(proxy), amountIn);
 		
 		swapRouter.exactInput(dcaArgs);
 		
 		uint256 balanceAfter = tokenOut.balanceOf(user);
 		uint amountOut = balanceAfter - balanceBefore;	// G-06
 
-		//require(amountOut >= amountOutMin, 'Too little received'); // G-01
 		ordersById[id].totalAmountOut += amountOut;
 
 		uint256 period = ordersById[id].period; //G-06
@@ -124,13 +122,10 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param ftmSwapArgs the ftmSwapArgs struct for Algebra swap (for Gelato fees)
 	 */
 	function executeOrder(uint256 id, uint256 amountTokenInGelatoFees, ExactInputParams memory dcaArgs, ExactInputParams memory ftmSwapArgs) public onlyOwnerOrDedicatedMsgSender { // H-03 (onlyOwnerOrDedicatedMsgSender)
-		//require(id < getOrdersCountTotal(), 'Order does not exist');
 		if (id >= getOrdersCountTotal()) // G-02
 			revert ErrorOrderDoesNotExist(id, getOrdersCountTotal());
-		//require(ordersById[id].stopped == false, 'Order is stopped');
 		if (ordersById[id].stopped) // G-02
 			revert ErrorOrderStopped(id);
-		//require(block.timestamp - ordersById[id].lastExecution >= ordersById[id].period, 'Period not elapsed');
 		if (block.timestamp - ordersById[id].lastExecution < ordersById[id].period) // G-02
 			revert ErrorPeriodNotElapsed(id, ordersById[id].lastExecution, block.timestamp, ordersById[id].lastExecution + ordersById[id].period);
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance');
@@ -152,7 +147,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 			SilverDcaApprover(ordersById[id].approver).transferGelatoFees(gelatoFees);
 			TransferHelper.safeApprove(ordersById[id].tokenIn, address(swapRouter), gelatoFees); // L-06
-			//ERC20(ordersById[id].tokenIn).approve(address(proxy), gelatoFees);
 			swapRouter.exactInput(ftmSwapArgs);
 		}
 
@@ -217,7 +211,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param id the order id
 	 */
 	function stopOrder(uint256 id) public onlyUser(id){
-		//require(ordersById[id].stopped == false, 'Order is already stopped.');
 		if (ordersById[id].stopped) // G-02
 			revert ErrorOrderStopped(id);
 
@@ -233,7 +226,6 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param dcaArgs the dcaArgs struct for Algebra swap (in case the order should be directly executed)
 	 */
 	function restartOrder(uint256 id, ExactInputParams memory dcaArgs) public onlyUser(id) {
-		//require(ordersById[id].stopped == true, 'Order is not stopped');
 		if (!ordersById[id].stopped) // G-02
 			revert ErrorOrderNotStopped(id);
 
@@ -388,17 +380,14 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	}
 	
 	modifier onlyUser(uint256 id) { // G-04
-		//require(id < getOrdersCountTotal(), 'Order does not exist');
 		if (id >= getOrdersCountTotal()) // G-02
 			revert ErrorOrderDoesNotExist(id, getOrdersCountTotal());
-		//require(ordersById[id].user == msg.sender, 'Not authorized');
 		if (ordersById[id].user != msg.sender) // G-02
 			revert ErrorNotAuthorized(id, ordersById[id].user, msg.sender);
 		_;
 	}
 
 	modifier onlyValidEntries(uint256 period, uint256 amountIn, uint256 amountOutMin) { //G-04
-		// No G-02, because seems better to have a revert message for users
 		require(period >= 5 minutes, 'Period must be > 5 min');
 		require(amountIn >= 100, 'AmountIn must be > 99'); // H-02
 		require(amountOutMin > 0, 'AmountOutMin must be > 0'); // L-02
@@ -416,20 +405,3 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 	receive() external payable {}
 }
-// H-01 fixed
-// H-02 fixed
-// H-03 fixed
-
-// L-01 fixed
-// L-02 fixed
-// L-03 fixed
-// L-04 fixed
-// L-05 fixed
-// L-06 fixed
-
-// G-01 fixed
-// G-02 fixed
-// G-03 fixed
-// G-04 fixed -> maybe some more modifiers ?
-// G-05 fixed (don't need)
-// G-06 fixed
