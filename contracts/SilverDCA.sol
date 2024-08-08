@@ -53,7 +53,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	event GelatoFeesCheck(uint256 fees, address token);
 
 	// Events for Misc
-	event EditedTresory(address usdc);
+	event EditedTresory(address tresory);
 	event EditedScriptCID(string cid);
 	event WithdrawnFees(address tresory, uint256 amount);
 
