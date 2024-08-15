@@ -56,6 +56,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	event EditedTresory(address tresory);
 	event EditedScriptCID(string cid);
 	event WithdrawnFees(address tresory, uint256 amount);
+	event WithdrawnToken(uint256 amount);
 
 	// Error events
 	error ErrorOrderDoesNotExist(uint256 id, uint256 ordersCount);
@@ -379,6 +380,19 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		payable(_tresory).transfer(balance);
 
 		emit WithdrawnFees(_tresory, balance);
+    }
+
+	/**
+	 * @dev Withdraw ERC20 token from the contract
+	 */
+	function withdrawToken(address tokenAddress) public onlyOwner {
+		IERC20 token = IERC20(tokenAddress);
+        uint256 balance = token.balanceOf(address(this));
+        require(balance > 0, 'No token to withdraw');
+
+		token.transfer(owner(), balance);
+
+		emit WithdrawnToken(balance);
     }
 
 
