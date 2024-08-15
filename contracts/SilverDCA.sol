@@ -64,7 +64,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	error ErrorOrderStopped(uint256 id);
 	error ErrorOrderNotStopped(uint256 id);
 	error ErrorPeriodNotElapsed(uint256 id, uint256 lastExecution, uint256 blockTimestamp, uint256 nextExecution);
-	error ErrorInvalidExactInputParams();
+	error ErrorInvalidExactInputParams(uint256 pathLenght, uint256 amountIn, address recipient, uint256 deadline);
 	error ErrorTaskAlreadyCreated(uint256 id);
 	error ErrorTaskNotCreated(uint256 id);
 
@@ -80,7 +80,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 */
 	function _executeOrder(uint id, ExactInputParams memory dcaArgs) private {
 		if (dcaArgs.path.length == 0 || dcaArgs.amountIn == 0 || dcaArgs.recipient == address(0) || dcaArgs.deadline < block.timestamp) // G-02
-			revert ErrorInvalidExactInputParams();
+			revert ErrorInvalidExactInputParams(dcaArgs.path.length, dcaArgs.amountIn, dcaArgs.recipient, dcaArgs.deadline);
 
 		address user = ordersById[id].user;
 		IERC20 tokenIn = IERC20(ordersById[id].tokenIn);
@@ -338,6 +338,15 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
         return address(uint160(uint(hash)));
     }
 
+	function checkAllowance(uint256 id) public view returns (bool) {
+		bool isApproved = false;
+		
+		if (IERC20(ordersById[id].tokenIn).allowance(ordersById[id].user, ordersById[id].approver) >= ordersById[id].amountIn)
+			isApproved = true;
+
+		return (isApproved);
+	}
+	
 
 	// Internal functions 
 
