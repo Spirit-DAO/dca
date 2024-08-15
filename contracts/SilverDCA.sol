@@ -38,7 +38,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	mapping(address => uint256[]) public idByAddress;
 
 	// Script CID for Gelato
-	string private scriptCID = "QmWzG1ZVA6p1sB6deDMLxim6MPfnNdZKZuA3oSPMFHT9SC";
+	string private scriptCID = "QmcNVB7M1vbpRHuy59WmcRrmxd2uQfJHKexeeqETYWN6uJ";
 
 	// Events for Orders
 	event OrderCreated(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
