@@ -56,7 +56,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	event EditedTresory(address tresory);
 	event EditedScriptCID(string cid);
 	event WithdrawnFees(address tresory, uint256 amount);
-	event WithdrawnToken(uint256 amount);
+	event WithdrawnToken(address token, uint256 amount);
 
 	// Error events
 	error ErrorOrderDoesNotExist(uint256 id, uint256 ordersCount);
@@ -79,7 +79,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	 * @param id the order id
 	 * @param dcaArgs the dcaArgs struct for Algebra swap
 	 */
-	function _executeOrder(uint id, ExactInputParams memory dcaArgs) private {
+	function _executeOrder(uint id, uint256 realAmountIn, ExactInputParams memory dcaArgs) private {
 		if (dcaArgs.path.length == 0 || dcaArgs.amountIn == 0 || dcaArgs.recipient == address(0) || dcaArgs.deadline < block.timestamp) // G-02
 			revert ErrorInvalidExactInputParams(dcaArgs.path.length, dcaArgs.amountIn, dcaArgs.recipient, dcaArgs.deadline);
 
@@ -87,8 +87,8 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		IERC20 tokenIn = IERC20(ordersById[id].tokenIn);
 		IERC20 tokenOut = IERC20(ordersById[id].tokenOut);
 
-		uint256	fees = ordersById[id].amountIn / 100;
-		uint256 amountIn = ordersById[id].amountIn - fees;
+		uint256	fees = realAmountIn / 100;
+		uint256 amountIn = realAmountIn - fees;
 		uint256 amountOutMin = ordersById[id].amountOutMin;
 
 		dcaArgs.recipient = payable(address(user));
@@ -96,7 +96,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		dcaArgs.amountOutMinimum = amountOutMin;
 
 		uint256 balanceBefore = tokenOut.balanceOf(user);
-		ordersById[id].totalExecutions += 1;
+		ordersById[id].totalExecutions++;
 		ordersById[id].totalAmountIn += ordersById[id].amountIn;
         SilverDcaApprover(ordersById[id].approver).executeOrder();
 		ordersById[id].lastExecution = block.timestamp;
@@ -111,9 +111,9 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 		ordersById[id].totalAmountOut += amountOut;
 
-		uint256 realAmountIn = ordersById[id].amountIn; //G-06
+		amountIn = ordersById[id].amountIn;
 		uint256 period = ordersById[id].period; //G-06
-		emit OrderExecuted(user, id, address(tokenIn), address(tokenOut), realAmountIn, amountOut, amountOutMin, period);
+		emit OrderExecuted(user, id, address(tokenIn), address(tokenOut), amountIn, amountOut, amountOutMin, period);
 	}
 	
 	/**
@@ -132,18 +132,16 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			revert ErrorPeriodNotElapsed(id, ordersById[id].lastExecution, block.timestamp, ordersById[id].lastExecution + ordersById[id].period);
 		require(ERC20(ordersById[id].tokenIn).balanceOf(ordersById[id].user) >= ordersById[id].amountIn, 'Not enough balance');
 
-		uint256 initialAmountIn = ordersById[id].amountIn;
+		uint256 realAmountIn = ordersById[id].amountIn;
 		
 		bool isFtmSwap = ftmSwapArgs.path.length != 0 && ftmSwapArgs.amountIn != 0 && ftmSwapArgs.recipient != address(0);
 
 		if (isFtmSwap)
 		{
-			uint256 gelatoFees = 0;
+			uint256 gelatoFees = ftmSwapArgs.amountIn;
 
 			require(amountTokenInGelatoFees < ordersById[id].amountIn, 'amountTokenInGelatoFees too high');
-			ordersById[id].amountIn -= amountTokenInGelatoFees;
-
-			gelatoFees = ftmSwapArgs.amountIn;
+			realAmountIn -= amountTokenInGelatoFees;
 
 			ftmSwapArgs.recipient = payable(address(this));
 
@@ -152,11 +150,10 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 			swapRouter.exactInput(ftmSwapArgs);
 		}
 
-		_executeOrder(id, dcaArgs);
+		_executeOrder(id, realAmountIn, dcaArgs);
 
 		if (isFtmSwap)
 		{
-			ordersById[id].amountIn = initialAmountIn;
 			(uint256 fee, address feeToken) = _getFeeDetails();
 
         	_transfer(fee, feeToken);
@@ -180,7 +177,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		idByAddress[msg.sender].push(ordersCount);
 		ordersCount++;
 
-		_executeOrder(getOrdersCountTotal() - 1, dcaArgs);
+		_executeOrder(getOrdersCountTotal() - 1, amountIn, dcaArgs);
 		createTask(getOrdersCountTotal() - 1);
 
 		emit OrderCreated(msg.sender, getOrdersCountTotal() - 1, tokenIn, tokenOut, amountIn, amountOutMin, period);
@@ -199,7 +196,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		ordersById[id].amountOutMin = amountOutMin;
 		ordersById[id].period = period;
 		if (!ordersById[id].stopped && block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) 
-			_executeOrder(id, dcaArgs);
+			_executeOrder(id, amountIn, dcaArgs);
 		if (!ordersById[id].stopped)
 			createTask(id);
 
@@ -233,7 +230,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 		ordersById[id].stopped = false;
 		if (block.timestamp - ordersById[id].lastExecution >= ordersById[id].period) {
-			_executeOrder(id, dcaArgs);
+			_executeOrder(id, ordersById[id].amountIn, dcaArgs);
 		}
 		createTask(id);
 
@@ -392,7 +389,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 
 		token.transfer(owner(), balance);
 
-		emit WithdrawnToken(balance);
+		emit WithdrawnToken(tokenAddress, balance);
     }
 
 
