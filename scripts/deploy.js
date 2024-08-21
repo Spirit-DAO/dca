@@ -12,12 +12,14 @@ async function main() {
 	let deploysExtraData = JSON.parse(fs.readFileSync(deployExtraDataPath, 'utf8'));
 
 	const dcaFactory = await hre.ethers.getContractFactory("SilverSwapDCA");
+	
 	const dca = await dcaFactory.deploy(deploysExtraData.swapRouter, deploysExtraData.gelato, deploysExtraData.tresory);
 
 	await dca.waitForDeployment();
 
 	deploysData.dca = dca.target;
 	console.log(`deployed to ${dca.target}`);
+	
 	
 	fs.writeFileSync(deployDataPath, JSON.stringify(deploysData), 'utf-8');
 }

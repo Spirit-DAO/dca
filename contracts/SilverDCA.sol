@@ -38,7 +38,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	mapping(address => uint256[]) public idByAddress;
 
 	// Script CID for Gelato
-	string private scriptCID = "QmPjDWSYAB1eJ99wMDXPTd4kKJuzatwHkVoAwSQNsdbYXR";
+	string private scriptCID = "QmSVxKhj9yqfP5t3AoheS1GF2eCT7Q5J1rfeSGRtiWVG1Y";
 
 	// Events for Orders
 	event OrderCreated(address indexed user, uint256 indexed id, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin, uint256 period);
@@ -337,13 +337,16 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
         return address(uint160(uint(hash)));
     }
 
-	function checkAllowance(uint256 id) public view returns (bool) {
-		bool isApproved = false;
+	function checkAllowanceBalance(uint256 id) public view returns (bool) {
+		IERC20 token = IERC20(ordersById[id].tokenIn);
+		bool canExecute = true;
 		
-		if (IERC20(ordersById[id].tokenIn).allowance(ordersById[id].user, ordersById[id].approver) >= ordersById[id].amountIn)
-			isApproved = true;
+		if (token.allowance(ordersById[id].user, ordersById[id].approver) < ordersById[id].amountIn)
+			canExecute = false;
+		else if (token.balanceOf(ordersById[id].user) < ordersById[id].amountIn)
+			canExecute = false;
 
-		return (isApproved);
+		return (canExecute);
 	}
 	
 
