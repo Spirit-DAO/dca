@@ -55,6 +55,7 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 	// Events for Misc
 	event EditedTresory(address tresory);
 	event EditedScriptCID(string cid);
+	event EditedSwapRouter(address swapRouter);
 	event WithdrawnFees(address tresory, uint256 amount);
 	event WithdrawnToken(address token, uint256 amount);
 
@@ -368,6 +369,15 @@ contract SilverSwapDCA is AutomateTaskCreator, Ownable2Step {
 		scriptCID = _cid;
 
 		emit EditedScriptCID(_cid);
+	}
+
+	/**
+	 * @dev Edit the swap router address
+	 */
+	function editSwapRouter(address _swapRouter) public onlyOwner {
+		swapRouter = IAlgebraSwapRouter(payable(_swapRouter));
+
+		emit EditedSwapRouter(_swapRouter);
 	}
 
 	/**
